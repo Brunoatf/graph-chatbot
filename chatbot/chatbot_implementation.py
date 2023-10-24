@@ -38,7 +38,7 @@ class CallbackHandler(StreamingStdOutCallbackHandler):
         if st.session_state.stream == True:
             st.session_state.container.markdown(self.content)
 
-llm = CustomLLM(temperature=0, verbose=True, streaming=True, callbacks=[CallbackHandler()],openai_api_key="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", max_tokens=1024)
+llm = CustomLLM(temperature=0, verbose=True, streaming=True, callbacks=[CallbackHandler()], max_tokens=1024)
 
 tools = [
     Tool(
