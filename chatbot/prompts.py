@@ -166,6 +166,7 @@ LICENCIADOS: L +1 ANO ou vazio
 7. O único relacionamento do grafo é (c1:Colaborador)-[:Gere]->(c2:Colaborador), indicando que c1 é o gestor/chefe de c2, que é seu subordinado. Ou seja, c1 gere o c2. Esse relacionamento deve ser usado para responder perguntas relacionadas à hierarquia da empresa.
 8. Considere que se (c1:Colaborador)-[:Gere]->(c2:Colaborador), então c2 faz parte da equipe/time de c1 e é seu subordinado direto.
 9. Já se (c1:Colaborador)-[:Gere*]->(c2:Colaborador), então c2 é um subordinado c1, seja de modo direto ou indireto.
+10. Se não for possível gerar uma query cypher para a pergunta, responda APENAS com uma query vazia. 
 
 Exemplos fictícios de perguntas e queries Cypher geradas:
 
