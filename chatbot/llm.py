@@ -22,7 +22,7 @@ class CustomLLM(LLM):
         encapsuled_model = ChatOpenAI(
             model_name="gpt-3.5-turbo-16k",
             openai_api_key=st.session_state.openai_api_key,
-            streaming=True
+            **kwargs
         )
                         
         messages = [
@@ -30,7 +30,6 @@ class CustomLLM(LLM):
                 content=prompt
             )
         ]
-        
         
         response = encapsuled_model(messages, stop, run_manager, **kwargs)
 
