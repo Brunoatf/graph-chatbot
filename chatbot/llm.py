@@ -1,9 +1,9 @@
 from typing import Any, List, Mapping, Optional
 import streamlit as st
-
+from langchain.chat_models import ChatOpenAI
 from langchain.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms.base import LLM
-from langchain.llms import OpenAI
+from langchain.schema import AIMessage, HumanMessage
 
 class CustomLLM(LLM):
 
@@ -18,12 +18,20 @@ class CustomLLM(LLM):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> str:
-        
-        encapsuled_model = OpenAI(temperature=0,
-                          verbose=True,
-                          openai_api_key=st.session_state.openai_api_key,
-                          max_tokens=1024)
-        
-        response = encapsuled_model(prompt, stop, run_manager, **kwargs)
 
-        return(response)
+        encapsuled_model = ChatOpenAI(
+            model_name="gpt-3.5-turbo-0613",
+            openai_api_key=st.session_state.openai_api_key,
+        )
+                        
+        messages = [
+            HumanMessage(
+                content=prompt
+            )
+        ]
+        
+        
+        response = encapsuled_model(messages, stop, run_manager, **kwargs)
+        print(response)
+
+        return(response.content)

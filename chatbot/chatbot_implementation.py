@@ -76,9 +76,9 @@ class CustomPromptTemplate(StringPromptTemplate):
         kwargs["agent_scratchpad"] = thoughts
         kwargs["user"] = (st.session_state.user_name).upper()
         kwargs["few_shots"] = chatbot_few_shots.format(user=st.session_state.user_name)
-        kwargs["domain"] = "bases de dados de recursos humanos da Vtal"
+        kwargs["domain"] = "bases de dados de recursos humanos da MRKL"
         kwargs["contact"] = "o supervisor de RH"
-        kwargs["recommendation"] = "checar manualmente as bases de dados da Vtal"
+        kwargs["recommendation"] = "checar manualmente as bases de dados da MRKL"
 
         # Create a tools variable from the list of tools provided
         kwargs["tools"] = "\n".join([f"{tool.name}: {tool.description}" for tool in self.tools])
