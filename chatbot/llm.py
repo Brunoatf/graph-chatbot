@@ -20,7 +20,7 @@ class CustomLLM(LLM):
     ) -> str:
 
         encapsuled_model = ChatOpenAI(
-            model_name="gpt-3.5-turbo",
+            model_name="gpt-3.5-turbo-16k",
             openai_api_key=st.session_state.openai_api_key,
             **kwargs
         )
