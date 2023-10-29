@@ -5,12 +5,14 @@ from langchain_experimental.sql import SQLDatabaseChain
 from langchain.chains import LLMChain
 from langchain.chains import GraphCypherQAChain
 from langchain.graphs import Neo4jGraph
+from langchain.prompts import StringPromptTemplate
 import pandas as pd
 
 from chatbot.prompts import sql_chain_prompt
-from chatbot.prompts import cypher_query_prompt, cypher_qa_prompt
+from chatbot.prompts import cypher_query_prompt_template, cypher_qa_prompt_template
 
 from chatbot.llm import CustomLLM
+import streamlit as st
 
 db_recibos_funcionarios = SQLDatabase.from_uri("sqlite:///./chatbot/chatbot_data/recibos_funcionarios.db")
 
@@ -28,21 +30,36 @@ db_chain_recibos_funcionarios = SQLDatabaseChain(
     verbose=True,
     use_query_checker=True)
 
-graph = Neo4jGraph(
-    url="neo4j+s://82046d1f.databases.neo4j.io", username="neo4j", password="LyvEFa1Eyf0VtMaELDfjqW6uyaF3pckSRDLY0z_koQU"
-)
 
-cypher_generation_prompt = PromptTemplate(
-    input_variables=["question"], template=cypher_query_prompt)
+class CypherQueryPrompt(StringPromptTemplate):
 
-cypher_qa_prompt = PromptTemplate(
-    input_variables=['context', 'question'], template=cypher_qa_prompt)
+    template: str
+    user_name: str
 
-cypher_qa_chain = GraphCypherQAChain.from_llm(
-    llm,
-    graph=graph,
-    verbose=True,
-    cypher_prompt=cypher_generation_prompt,
-    qa_prompt=cypher_qa_prompt,
-    top_k=20,
-)
+    def format(self, **kwargs) -> str:
+        kwargs['user_name'] = self.user_name
+        return self.template.format(**kwargs)
+
+def get_cypher_qa_chain(user_name: str):
+
+    graph = Neo4jGraph(
+        url="neo4j+s://82046d1f.databases.neo4j.io", username="neo4j", password="LyvEFa1Eyf0VtMaELDfjqW6uyaF3pckSRDLY0z_koQU"
+    )
+
+    cypher_generation_prompt = CypherQueryPrompt(
+        input_variables=["question"], user_name=user_name, template=cypher_query_prompt_template)
+
+    cypher_qa_prompt = PromptTemplate(
+        input_variables=['context', 'question'], template=cypher_qa_prompt_template)
+    
+    cypher_qa_chain = GraphCypherQAChain.from_llm(
+        llm,
+        graph=graph,
+        verbose=True,
+        cypher_prompt=cypher_generation_prompt,
+        return_direct=True,
+        qa_prompt=cypher_qa_prompt,
+        top_k=20,
+    )
+
+    return cypher_qa_chain

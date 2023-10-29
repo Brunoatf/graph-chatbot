@@ -26,6 +26,12 @@ with st.sidebar:
 st.title("💬 ChatBot RH - Versão de Testes")
 st.caption("Desenvolvido por NeuralMind 🧠")
 
+if "user_name" not in st.session_state:
+    st.session_state["user_name"] = None
+
+if "openai_api_key" not in st.session_state:
+    st.session_state["openai_api_key"] = None
+
 if "messages" not in st.session_state:
 
     st.session_state["messages"] = [
@@ -34,13 +40,7 @@ if "messages" not in st.session_state:
     ]
 
     st.session_state.stream = False
-    st.session_state.chatbot = ChatBot()
-
-if "user_name" not in st.session_state:
-    st.session_state["user_name"] = None
-
-if "openai_api_key" not in st.session_state:
-    st.session_state["openai_api_key"] = None
+    st.session_state.chatbot = ChatBot(st.session_state.user_name)
 
 for msg in st.session_state.messages:
     if msg["role"] == "assistant":
@@ -60,6 +60,7 @@ if prompt := st.chat_input():
         
     if user_name != st.session_state.user_name:
         st.session_state.user_name = user_name
+        st.session_state.chatbot.user_name = user_name.upper()
 
     if openai_api_key != st.session_state.openai_api_key:
         st.session_state.openai_api_key = openai_api_key
