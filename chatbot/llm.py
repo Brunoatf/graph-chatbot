@@ -64,6 +64,4 @@ class ChatbotLLM(CustomLLM):
 
         response = super()._call(prompt, stop, run_manager, **kwargs)
 
-        print(prompt)
-
         return(response)

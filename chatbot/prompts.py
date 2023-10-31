@@ -14,6 +14,8 @@ Answer: Resposta final a ser retornada para o usuário com base no SQLResult. Co
 sendo necessário que todas as informações desejadas estejam escritas de modo completo aqui em Answer.
 Use apenas as seguintes tabelas: {table_info}
 
+Considere que se a pergunta estiver em primeira pessoa, ela se refere aos recibos do colaborador {user_name}
+
 Question: {input}"""
 
 personal_data_prompt_template = """Sua função é ser um assistente para consultar os dados cadastrais do usuário {user_name}.

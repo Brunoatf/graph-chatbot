@@ -15,22 +15,7 @@ import streamlit as st
 from chatbot.chatbot_data.graph_manager import employees_graph
 from langchain.schema import StrOutputParser
 
-db_recibos_funcionarios = SQLDatabase.from_uri("sqlite:///./chatbot/chatbot_data/recibos_funcionarios.db")
-
 llm = CustomLLM()
-
-prompt_template_sql = PromptTemplate(
-    input_variables=['input', 'table_info', 'top_k'],
-    template=sql_chain_prompt
-)
-
-db_chain_recibos_funcionarios = SQLDatabaseChain(
-    database=db_recibos_funcionarios,
-    llm_chain=LLMChain(prompt=prompt_template_sql, llm=llm),
-    top_k=20,
-    verbose=True,
-    use_query_checker=True)
-
 
 class CypherQueryPrompt(StringPromptTemplate):
 
@@ -50,6 +35,15 @@ class PersonalDataPrompt(StringPromptTemplate):
     def format(self, **kwargs) -> str:
         kwargs['user_name'] = self.user_name
         kwargs['personal_data'] = self.personal_data
+        return self.template.format(**kwargs)
+    
+class RecibosFuncionariosPrompt(StringPromptTemplate):
+
+    template: str
+    user_name: str
+
+    def format(self, **kwargs) -> str:
+        kwargs['user_name'] = self.user_name
         return self.template.format(**kwargs)
 
 def get_cypher_qa_chain(user_name: str):
@@ -91,3 +85,23 @@ def get_personal_data_chain(user_name: str):
     runnable = LLMChain(llm=llm, prompt=personal_data_prompt)
 
     return runnable
+
+def get_db_chain_recibos_funcionarios(user_name: str):
+
+    db_recibos_funcionarios = SQLDatabase.from_uri("sqlite:///./chatbot/chatbot_data/recibos_funcionarios.db")
+
+    prompt_template_sql = RecibosFuncionariosPrompt(
+        input_variables=['input', 'table_info', 'top_k'],
+        template=sql_chain_prompt,
+        user_name=user_name
+    )
+
+    db_chain_recibos_funcionarios = SQLDatabaseChain(
+        database=db_recibos_funcionarios,
+        llm_chain=LLMChain(prompt=prompt_template_sql, llm=llm),
+        top_k=20,
+        verbose=True,
+        use_query_checker=True
+    )
+
+    return db_chain_recibos_funcionarios

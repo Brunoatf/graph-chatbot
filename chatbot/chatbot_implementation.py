@@ -21,7 +21,7 @@ from langchain.callbacks.streaming_stdout_final_only import (
 from chatbot.llm import ChatbotLLM
 
 from chatbot.prompts import chatbot_few_shots, chatbot_prompt
-from chatbot.agent_tools import get_cypher_qa_chain, get_personal_data_chain, db_chain_recibos_funcionarios
+from chatbot.agent_tools import get_cypher_qa_chain, get_personal_data_chain, get_db_chain_recibos_funcionarios
 from chatbot.chatbot_data.graph_manager import employees_graph
 
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
@@ -35,11 +35,12 @@ class CallbackHandler(StreamingStdOutCallbackHandler):
 
     def on_llm_new_token(self, token: str, **kwargs: any) -> None:
         self.content += token
-        if "Resposta:" in self.content:
+        if "Finalizar:" in self.content:
             # now we're in the final answer section, but don't print yet
             st.session_state.stream = True
             self.content = ""
         if st.session_state.stream == True:
+            self.content = re.sub(r'(?<!\\)\$', r'\\$', self.content)
             st.session_state.container.markdown(self.content)
 
 class CustomPromptTemplate(StringPromptTemplate):
@@ -121,7 +122,7 @@ class ChatBot():
         self.memory = ConversationSummaryBufferMemory(llm=llm, max_token_limit=1000, memory_key="chat_history")
 
         #Agent tools:
-        self.tools = self.get_tools(self._user_name, is_manager=employees_graph.check_if_is_manager(self._user_name))
+        self.tools = self.get_tools(self._user_name, is_manager=True)
 
         #Chatbot prompt:
         self.prompt = CustomPromptTemplate(
@@ -152,7 +153,7 @@ class ChatBot():
             tools.append(Tool(
                 name="Assistente_Cadastro_Funcionarios",
                 func=cypher_qa_chain.run,
-                description="""Assistente capaz de consultar dados pessoais/cadastrais de funcionários (com exceção de recibos) ou informações relacionadas à estrutura hierárquica de equipes e subordinados da empresa."""
+                description="""Assistente capaz de consultar dados pessoais/cadastrais de funcionários (com exceção de recibos) ou informações relacionadas à estrutura hierárquica de equipes e subordinados da empresa. Útil para solicitar dados como salário, cargo, equipe, CPF, etc."""
             ))
         else:
             personal_data_chain = get_personal_data_chain(user_name=new_name)
@@ -163,11 +164,13 @@ class ChatBot():
                     description="""Assistente capaz de consultar dados pessoais/cadastrais do usuário, com exceção de recibos."""
                 ))
 
-        tools.append(Tool(
-            name="Assistente_Recibos_Funcionarios",
-            func=db_chain_recibos_funcionarios.run,
-            description="""Assistente capaz consultar dados relacionados a recibos e pagamentos de funcionários. Não é capaz de consultar dados pessoais ou informações relacionadas a estrutura de equipes e subordinados. Útil para solicitar a geração/consulta de recibos."""
-        ))
+        db_chain_recibos_funcionarios = get_db_chain_recibos_funcionarios(user_name=new_name)
+        if db_chain_recibos_funcionarios is not None:
+            tools.append(Tool(
+                name="Assistente_Recibos_Funcionarios",
+                func=db_chain_recibos_funcionarios.run,
+                description="""Assistente capaz consultar dados relacionados a recibos e pagamentos de funcionários. Não é capaz de consultar dados pessoais ou informações relacionadas a estrutura de equipes e subordinados. Útil para solicitar a geração/consulta de recibos. Forneca SEMPRE o nome completo do funcionário em relação ao qual deseja consultar dados."""
+            ))
         
         return tools
     
