@@ -19,7 +19,6 @@ st.markdown(hide_default_format, unsafe_allow_html=True)
 
 with st.sidebar:
     st.write("ℹ️ Antes de iniciar uma conversa, preencha os campos abaixo para obter uma experiência personalizada.")
-    openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
     user_name = st.text_input("Seu nome completo", key="chatbot_user_name")
     st.write("ℹ️ As informações retornadas ao longo da conversa fazem referência a dados de uma empresa fictícia chamada MRKL, criada apenas para fins de demonstração.")
     
@@ -28,9 +27,6 @@ st.caption("Desenvolvido por NeuralMind 🧠")
 
 if "user_name" not in st.session_state:
     st.session_state["user_name"] = None
-
-if "openai_api_key" not in st.session_state:
-    st.session_state["openai_api_key"] = None
 
 if "messages" not in st.session_state:
 
@@ -49,10 +45,6 @@ for msg in st.session_state.messages:
         st.chat_message(msg["role"]).write(msg["content"])
 
 if prompt := st.chat_input():
-
-    if not openai_api_key:
-        st.info("Por favor adicione a sua chave de API da Open AI para continuar.")
-        st.stop()
     
     if not user_name:
         st.info("Por favor adicione o seu nome completo para continuar.")
@@ -61,9 +53,6 @@ if prompt := st.chat_input():
     if user_name != st.session_state.user_name:
         st.session_state.user_name = user_name
         st.session_state.chatbot.user_name = user_name.upper()
-
-    if openai_api_key != st.session_state.openai_api_key:
-        st.session_state.openai_api_key = openai_api_key
 
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)

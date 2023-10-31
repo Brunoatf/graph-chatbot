@@ -21,7 +21,8 @@ from langchain.callbacks.streaming_stdout_final_only import (
 from chatbot.llm import ChatbotLLM
 
 from chatbot.prompts import chatbot_few_shots, chatbot_prompt
-from chatbot.agent_tools import get_cypher_qa_chain, db_chain_recibos_funcionarios
+from chatbot.agent_tools import get_cypher_qa_chain, get_personal_data_chain, db_chain_recibos_funcionarios
+from chatbot.chatbot_data.graph_manager import employees_graph
 
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
@@ -109,6 +110,9 @@ class ChatBot():
             self._user_name = "Usuário"
         else:
             self._user_name = user_name
+            self.start_agent()
+
+    def start_agent(self):
 
         #Initialize LLM:
         llm = ChatbotLLM(temperature=0, verbose=True, streaming=True, callbacks=[CallbackHandler()], max_tokens=1024)
@@ -117,7 +121,7 @@ class ChatBot():
         self.memory = ConversationSummaryBufferMemory(llm=llm, max_token_limit=1000, memory_key="chat_history")
 
         #Agent tools:
-        self.tools = self.get_tools()
+        self.tools = self.get_tools(self._user_name, is_manager=employees_graph.check_if_is_manager(self._user_name))
 
         #Chatbot prompt:
         self.prompt = CustomPromptTemplate(
@@ -141,21 +145,30 @@ class ChatBot():
             allowed_tools=[tool.name for tool in self.tools]
         )
 
-    def get_tools(self):
-        cypher_qa_chain = get_cypher_qa_chain(user_name=self._user_name)
-        tools = [
-            Tool(
+    def get_tools(self, new_name, is_manager):
+        tools = []
+        if is_manager:
+            cypher_qa_chain = get_cypher_qa_chain(user_name=new_name)
+            tools.append(Tool(
                 name="Assistente_Cadastro_Funcionarios",
                 func=cypher_qa_chain.run,
-                description="""Assistente capaz de consultar dados de funcionários ou informações relacionadas à estrutura hierárquica da empresa."""
-            ),
-            Tool(
-                name="Assistente_Recibos_Funcionarios",
-                func=db_chain_recibos_funcionarios.run,
-                description="""Assistente capaz consultar dados relacionados a recibos e pagamentos de funcionários.
-                Útil para solicitar a geração/consulta de recibos."""
-            )
-        ]
+                description="""Assistente capaz de consultar dados pessoais/cadastrais de funcionários (com exceção de recibos) ou informações relacionadas à estrutura hierárquica de equipes e subordinados da empresa."""
+            ))
+        else:
+            personal_data_chain = get_personal_data_chain(user_name=new_name)
+            if personal_data_chain is not None:
+                tools.append(Tool(
+                    name="Assistente_Dados_Pessoais",
+                    func=personal_data_chain.run,
+                    description="""Assistente capaz de consultar dados pessoais/cadastrais do usuário, com exceção de recibos."""
+                ))
+
+        tools.append(Tool(
+            name="Assistente_Recibos_Funcionarios",
+            func=db_chain_recibos_funcionarios.run,
+            description="""Assistente capaz consultar dados relacionados a recibos e pagamentos de funcionários. Não é capaz de consultar dados pessoais ou informações relacionadas a estrutura de equipes e subordinados. Útil para solicitar a geração/consulta de recibos."""
+        ))
+        
         return tools
     
     @property
@@ -165,8 +178,7 @@ class ChatBot():
     @user_name.setter
     def user_name(self, new_name):
         self._user_name = new_name
-        self.tools = self.get_tools() #update tools depending on user_name
-        self.prompt.user_name = new_name #update prompt depending on user_name
+        self.start_agent()
 
     def __call__(self, input):
         agent_executor = AgentExecutor.from_agent_and_tools(agent=self.agent, tools=self.tools, memory=self.memory, verbose=True)

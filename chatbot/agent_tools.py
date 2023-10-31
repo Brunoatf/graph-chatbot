@@ -8,11 +8,12 @@ from langchain.graphs import Neo4jGraph
 from langchain.prompts import StringPromptTemplate
 import pandas as pd
 
-from chatbot.prompts import sql_chain_prompt
-from chatbot.prompts import cypher_query_prompt_template, cypher_qa_prompt_template
+from chatbot.prompts import sql_chain_prompt, personal_data_prompt_template, cypher_query_prompt_template, cypher_qa_prompt_template
 
 from chatbot.llm import CustomLLM
 import streamlit as st
+from chatbot.chatbot_data.graph_manager import employees_graph
+from langchain.schema import StrOutputParser
 
 db_recibos_funcionarios = SQLDatabase.from_uri("sqlite:///./chatbot/chatbot_data/recibos_funcionarios.db")
 
@@ -39,6 +40,17 @@ class CypherQueryPrompt(StringPromptTemplate):
     def format(self, **kwargs) -> str:
         kwargs['user_name'] = self.user_name
         return self.template.format(**kwargs)
+    
+class PersonalDataPrompt(StringPromptTemplate):
+
+    template: str
+    user_name: str
+    personal_data: str
+
+    def format(self, **kwargs) -> str:
+        kwargs['user_name'] = self.user_name
+        kwargs['personal_data'] = self.personal_data
+        return self.template.format(**kwargs)
 
 def get_cypher_qa_chain(user_name: str):
 
@@ -57,9 +69,25 @@ def get_cypher_qa_chain(user_name: str):
         graph=graph,
         verbose=True,
         cypher_prompt=cypher_generation_prompt,
-        return_direct=True,
         qa_prompt=cypher_qa_prompt,
         top_k=20,
     )
 
     return cypher_qa_chain
+
+def get_personal_data_chain(user_name: str):
+
+    personal_data_dict = employees_graph.get_personal_data(user_name)
+    if personal_data_dict is None:
+        return None
+
+    personal_data = ""
+    for key, value in personal_data_dict.items():
+        personal_data += f"{key}: {value}\n"
+
+    personal_data_prompt = PersonalDataPrompt(
+        input_variables=["query"], template=personal_data_prompt_template, personal_data=personal_data, user_name=user_name)
+    
+    runnable = LLMChain(llm=llm, prompt=personal_data_prompt)
+
+    return runnable

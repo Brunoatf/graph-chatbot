@@ -24,7 +24,7 @@ class CustomLLM(LLM):
 
         encapsuled_model = ChatOpenAI(
             model_name=self.model_name,
-            openai_api_key=st.session_state.openai_api_key,
+            openai_api_key=os.getenv('openai_api_key'),
             streaming=True,
             **kwargs
         )
@@ -63,5 +63,7 @@ class ChatbotLLM(CustomLLM):
         self.current_prompt = prompt
 
         response = super()._call(prompt, stop, run_manager, **kwargs)
+
+        print(prompt)
 
         return(response)
