@@ -40,8 +40,7 @@ class CallbackHandler(StreamingStdOutCallbackHandler):
             st.session_state.stream = True
             self.content = ""
         if st.session_state.stream == True:
-            self.content = re.sub(r'(?<!\\)\$', r'\\$', self.content)
-            st.session_state.container.markdown(self.content)
+            st.session_state.container.markdown(self.content.replace("$", "\$"))
 
 class CustomPromptTemplate(StringPromptTemplate):
     # The template to use

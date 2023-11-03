@@ -64,7 +64,7 @@ if prompt := st.chat_input():
         try:
             response = st.session_state.chatbot(prompt)
             st.session_state.messages.append({"role": "assistant", "content": response})
-            container.write(response)
+            container.write(response.replace("$", "\$"))
         except Exception as e:
             st.error(f"Ocorreu um erro no processamento da mensagem. Tente novamente.")
         st.session_state.stream = False
