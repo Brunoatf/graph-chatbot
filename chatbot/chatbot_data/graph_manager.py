@@ -1,7 +1,7 @@
 from neo4j import GraphDatabase
 import pandas as pd
 
-class EmployeesGraph():
+class CompanyGraph():
 
     def __init__(self):
 
@@ -55,7 +55,57 @@ class EmployeesGraph():
         # Feche a conexão com o driver
         driver.close()
 
-employees_graph = EmployeesGraph()
+    def check_if_is_manager(self, name: str):
+
+        """Checks if the provided name is a manager to someone in the graph"""
+
+        # Crie uma instância do driver
+        driver = GraphDatabase.driver(self.uri, auth=(self.user, self.password))
+
+        # Execute a importação para o Neo4j
+        with driver.session() as session:
+            result = session.run("""MATCH (c:Colaborador {NOME: $name})-[:Gere*]->(subordinado)
+                                    RETURN COUNT(DISTINCT subordinado) AS NumeroDeSubordinados""", name=name)
+            subordinates = result.single()
+            print("subord data", result.single())
+            if subordinates is not None:
+                subordinates = subordinates[0]
+            else: 
+                subordinates = 0
+        
+        # Feche a conexão com o driver
+        driver.close()
+
+        if subordinates > 0:
+            return True
+        else:
+            return False
+        
+    def get_personal_data(self, name: str):
+
+        """Gets the personal data of the provided name"""
+
+        # Crie uma instância do driver
+        driver = GraphDatabase.driver(self.uri, auth=(self.user, self.password))
+
+        # Execute a importação para o Neo4j
+        with driver.session() as session:
+            result = session.run("""MATCH (c:Colaborador {NOME: $name})
+                                    RETURN properties(c) as properties""", name=name)
+            personal_data = result.single()
+            print("Personal data", result)
+            if personal_data is not None:
+                personal_data = personal_data[0]
+            else: 
+                personal_data = None
+        
+        # Feche a conexão com o driver
+        driver.close()
+
+        return personal_data
+
+
+employees_graph = CompanyGraph()
 
 if __name__ == "__main__":
     employees_graph.create_graph("chatbot/chatbot_data/colaboradores.xlsx")
