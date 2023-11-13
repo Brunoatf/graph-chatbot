@@ -20,7 +20,7 @@ from langchain.callbacks.streaming_stdout_final_only import (
 )
 from chatbot.llm import ChatbotLLM
 
-from chatbot.prompts import chatbot_few_shots, chatbot_prompt
+from chatbot.prompts import chatbot_few_shots_manager, chatbot_few_shots_employee, chatbot_prompt
 from chatbot.agent_tools import get_cypher_qa_chain, get_personal_data_chain, get_db_chain_recibos_funcionarios
 from chatbot.chatbot_data.graph_manager import employees_graph
 
@@ -49,6 +49,7 @@ class CustomPromptTemplate(StringPromptTemplate):
     tools: List[Tool]
     # User name
     user_name: str
+    is_manager: bool
 
     def format(self, **kwargs) -> str:
 
@@ -62,7 +63,10 @@ class CustomPromptTemplate(StringPromptTemplate):
 
         kwargs["agent_scratchpad"] = thoughts
         kwargs["user"] = self.user_name
-        kwargs["few_shots"] = chatbot_few_shots.format(user=self.user_name)
+        if self.is_manager:
+            kwargs["few_shots"] = chatbot_few_shots_manager.format(user=self.user_name)
+        else:
+            kwargs["few_shots"] = chatbot_few_shots_employee.format(user=self.user_name)
         kwargs["domain"] = "bases de dados de recursos humanos da MRKL"
         kwargs["contact"] = "o supervisor de RH"
         kwargs["recommendation"] = "checar manualmente as bases de dados da MRKL"
@@ -120,14 +124,18 @@ class ChatBot():
         #Initialize memory:
         self.memory = ConversationSummaryBufferMemory(llm=llm, max_token_limit=1000, memory_key="chat_history")
 
+        #Check if user is a manager:
+        is_manager = employees_graph.check_if_is_manager(self._user_name)
+
         #Agent tools:
-        self.tools = self.get_tools(self._user_name, is_manager=True)
+        self.tools = self.get_tools(self._user_name, is_manager)
 
         #Chatbot prompt:
         self.prompt = CustomPromptTemplate(
             template=chatbot_prompt,
             tools=self.tools,
             user_name=self._user_name,
+            is_manager=is_manager,
             input_variables=["input", "chat_history", "intermediate_steps"]
         )
 
@@ -150,9 +158,10 @@ class ChatBot():
         if is_manager:
             cypher_qa_chain = get_cypher_qa_chain(user_name=new_name)
             tools.append(Tool(
-                name="Assistente_Cadastro_Funcionarios",
+                name="Assistente_Dados_Pessoais_E_Subordinados",
                 func=cypher_qa_chain.run,
-                description="""Assistente capaz de consultar dados pessoais/cadastrais de funcionários (com exceção de recibos) ou informações relacionadas à estrutura hierárquica de equipes e subordinados da empresa. Útil para solicitar dados como salário, cargo, equipe, CPF, etc."""
+                description="""Assistente capaz de consultar dados pessoais/cadastrais de 
+            {new_name} e dos seus subordinados, com exceção de recibos. Não é capaz de consultar dados gerais de funcionários da MRKL."""
             ))
         else:
             personal_data_chain = get_personal_data_chain(user_name=new_name)
@@ -160,7 +169,7 @@ class ChatBot():
                 tools.append(Tool(
                     name="Assistente_Dados_Pessoais",
                     func=personal_data_chain.run,
-                    description="""Assistente capaz de consultar dados pessoais/cadastrais do usuário, com exceção de recibos."""
+                    description="""Assistente capaz de consultar dados pessoais/cadastrais do usuário, com exceção de recibos. ão é capaz de consultar dados gerais de funcionários da MRKL ou dados de subordinados, uma vez que o usuário não é um gestor e, portanto, não possui subordinados."""
                 ))
 
         db_chain_recibos_funcionarios = get_db_chain_recibos_funcionarios(user_name=new_name)

@@ -13,7 +13,7 @@ from chatbot.prompts import sql_chain_prompt, personal_data_prompt_template, cyp
 from chatbot.llm import CustomLLM
 import streamlit as st
 from chatbot.chatbot_data.graph_manager import employees_graph
-from langchain.schema import StrOutputParser
+from langchain.schema import StrOutputParser, BaseOutputParser
 
 llm = CustomLLM()
 
@@ -55,15 +55,19 @@ def get_cypher_qa_chain(user_name: str):
     cypher_generation_prompt = CypherQueryPrompt(
         input_variables=["question"], user_name=user_name, template=cypher_query_prompt_template)
 
+    cypher_generation_chain = LLMChain(llm=llm, prompt=cypher_generation_prompt)
+
     cypher_qa_prompt = PromptTemplate(
         input_variables=['context', 'question'], template=cypher_qa_prompt_template)
     
-    cypher_qa_chain = GraphCypherQAChain.from_llm(
-        llm,
+    qa_chain = LLMChain(llm=llm, prompt=cypher_qa_prompt) 
+
+    cypher_qa_chain = GraphCypherQAChain(
         graph=graph,
+        graph_schema=graph.schema,
         verbose=True,
-        cypher_prompt=cypher_generation_prompt,
-        qa_prompt=cypher_qa_prompt,
+        cypher_generation_chain=cypher_generation_chain,
+        qa_chain=qa_chain,
         top_k=20,
     )
 

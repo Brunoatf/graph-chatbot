@@ -26,19 +26,73 @@ Dados cadastrais:
 Solicitação: {query}
 Resposta:"""
 
-chatbot_few_shots = """Exemplo 1:
-Mensagem: Qual é a média salarial dos funcionários dessa área?
-Pensamento: Considerando o histórico da conversa, {user} está se referindo a área de vendas. Portanto, ele gostaria de saber a média dos salários dos colaboradores da área de vendas. Como não possuo essa informação, devo utilizar a ação Assistente_Cadastro_Funcionarios e pesquisar esse dado. Por fim, devo retornar a informação ao usuário.
-Ação: Assistente_Cadastro_Funcionarios
-Texto da Ação: Qual é a média salarial dos colaboradores da área de vendas?
-Observação: A média salarial dos colaboradores de vendas é R$3500,00
-Pensamento: Agora sei que a média salarial dos colaboradores de vendas é R$3500,00. Devo retornar tal informação ao usuário.
+chatbot_few_shots_employee = """Exemplo 1:
+Mensagem: Qual é o meu salário atual?
+Pensamento: {user} deseja saber qual é o seu salário atual. Devo pesquisar essa informação usando a ação Assistente_Dados_Pessoais e pesquisar na base de dados de recursos humanos da MRKL. Por fim, devo retornar a informação ao usuário.
+Ação: Assistente_Dados_Pessoais
+Texto da Ação: Qual é o salário atual de {user}?
+Observação: É R$3500,00
+Pensamento: Agora sei que o salário atual de {user} é R$3500,00. Devo retornar tal informação ao usuário.
+Finalizar: Sem problemas! O seu salário atual é de R$3500,00. Algo mais que deseje saber?
+
+Exemplo 2:
+Mensagem: Quantas pessoas há em minha equipe?
+Pensamento: {user} deseja saber quantas pessoas há em sua equipe. Como ele não possui subrdinados, devo avisá-lo que ele não possui uma equipe.
+Finalizar: Você não possui uma equipe de subordinados, e, por isso, não há como responder a sua pergunta. Ficarei feliz em ajudá-lo com outras informações.
+
+Exemplo 3:
+Mensagem: Liste meu CPF, RG e endereço
+Pensamento: {user} deseja que eu liste o seu CPF, RG e endereço. Devo pesquisar seu CPF, RG e endereço usando a ação Assistente_Dados_Pessoais. Por fim, devo retornar a informação ao usuário usando uma lista em Markdown.
+Ação: Assistente_Dados_Pessoais
+Texto da Ação: Quais são o CPF, RG e endereço de {user}?
+Observação: O CPF de {user} é 123.456.789-00; o RG de {user} é 12.345.678-9; o endereço de {user} é José Benedito Cottolengo.
+Pensamento: Agora sei que o CPF de {user} é 123.456.789-00; o RG de {user} é 12.345.678-9; o endereço de {user} é José Benedito Cottolengo. Devo retornar tais informações ao usuário utilizando uma lista em Markdown.
+Finalizar: Os seus dados solicitados são:
+
+- CPF: 123.456.789-00
+- RG: 12.345.678-9
+- Endereço: José Benedito Cottolengo
+
+Algo mais que deseje saber?
+
+Exemplo 4:
+
+Mensagem: Gere uma tabela com os meus recibos de janeiro de 2023
+Pensamento: {user} deseja que eu gere uma tabela com os seus recibos de janeiro de 2023. Devo utilizar a ação Assistente_Recibos_Funcionarios e pesquisar seus recibos de janeiro de 2023. Por fim, devo retornar a informação ao usuário como uma tabela em Markdown.
+Ação: Assistente_Recibos_Funcionarios
+Texto da Ação: Quais são os recibos de janeiro de 2023 do colaborador {user}?
+Observação: Os recibos de janeiro de 2023 do colaborador {user} são salário (R$5000,00); vale transporte (R$200,00); vale refeição (R$500,00)
+Pensamento: Agora sei que os recibos de janeiro de 2023 do colaborador {user} são salário (R$5000,00); vale transporte (R$200,00); vale refeição (R$500,00). Devo retornar tal informação ao usuário como uma tabela em Markdown.
+Finalizar: Os recibos de janeiro de 2023 do colaborador {user} são:
+
+| Recibo | Valor |
+| ------ | ----- |
+| Salário | R$5000,00 |
+| Vale transporte | R$200,00 |
+| Vale refeição | R$500,00 |
+
+Algo mais que deseje saber?
+
+Exemplo 5:
+Mensagem: Olá, meu nome é {user}.
+Pensamento: O usuário, chamado {user}, está cumprimentando. Não há necessidade de realizar nenhuma ação de pesquisa nas bases de dados da MRKL.
+Devo me apresentar e cumprimentá-lo cordialmente. 
+Finalizar: Olá {user}, tudo bem? Como posso ajudá-lo? Se tiver alguma dúvida relacionada a base de dados de recursos humanos da MRKL é só perguntar.
+"""
+
+chatbot_few_shots_manager = """Exemplo 1:
+Mensagem: Qual é a média salarial deles?
+Pensamento: Considerando o histórico da conversa, {user} está se referindo aos seus subordinados da área de vendas. Portanto, ele gostaria de saber a média dos salários dos seus subordinados da área de vendas. Como não possuo essa informação, devo utilizar a ação Assistente_Dados_Pessoais_E_Subordinados e pesquisar esse dado. Por fim, devo retornar a informação ao usuário.
+Ação: Assistente_Dados_Pessoais_E_Subordinados
+Texto da Ação: Qual é a média salarial dos subordinados da área de vendas?
+Observação: A média salarial dos subordinados de vendas é R$3500,00
+Pensamento: Agora sei que a média salarial dos subordinados de {user} da área de vendas é R$3500,00. Devo retornar tal informação ao usuário.
 Finalizar: Sem problemas! A média salarial dos colaboradores de vendas é R$3500,00. Algo mais que deseje saber?
 
 Exemplo 2:
 Mensagem: Quantas pessoas há em minha equipe?
-Pensamento: {user} deseja saber quantas pessoas há em sua equipe. Devo utilizar a ação Assistente_Cadastro_Funcionarios e pesquisar na base de dados de recursos humanos da MRKL. Por fim, devo retornar a informação ao usuário.
-Ação: Assistente_Cadastro_Funcionarios
+Pensamento: {user} deseja saber quantas pessoas há em sua equipe. Devo utilizar a ação Assistente_Dados_Pessoais_E_Subordinados e pesquisar na base de dados de recursos humanos da MRKL. Por fim, devo retornar a informação ao usuário.
+Ação: Assistente_Dados_Pessoais_E_Subordinados
 Texto da Ação: Quantas pessoas há na equipe do colaborador {user}?
 Observação: Há 5 pessoas na equipe do colaborador {user}.
 Pensamento: Agora sei que há 5 pessoas na equipe do colaborador {user}. Devo retornar tal informação ao usuário.
@@ -46,8 +100,8 @@ Finalizar: Há 5 pessoas na sua equipe. Fico feliz em poder ajudar!
 
 Exemplo 3:
 Mensagem: Liste o nome e salário de cada membro de minha equipe.
-Pensamento: {user} deseja que eu liste o nome e salário de cada membro de sua equipe. Devo utilizar a ação Assistente_Cadastro_Funcionarios e pesquisar na base de dados de recursos humanos da MRKL. Por fim, devo retornar a informação ao usuário como uma lista em Markdown.
-Ação: Assistente_Cadastro_Funcionarios
+Pensamento: {user} deseja que eu liste o nome e salário de cada membro de sua equipe. Devo utilizar a ação Assistente_Dados_Pessoais_E_Subordinados e pesquisar na base de dados de recursos humanos da MRKL. Por fim, devo retornar a informação ao usuário como uma lista em Markdown.
+Ação: Assistente_Dados_Pessoais_E_Subordinados
 Texto da Ação: Qual o nome e salário de cada colaborador da equipe de {user}?
 Observação: Os nomes e salários desejados são: João da Silva, R$ 3500,00; Maria Paula Pereira, R$ 5000,00; Ana da Silva, R$ 2000,00
 Pensamento: Agora sei que os nomes e salários desejados são: João da Silva, R$ 3500,00; Maria Paula Pereira, R$ 5000,00; Ana da Silva, R$ 2000,00. Devo retornar tal informação ao usuário.
@@ -85,8 +139,8 @@ Finalizar: Olá {user}, tudo bem? Como posso ajudá-lo? Se tiver alguma dúvida 
 
 Exemplo 6:
 Mensagem: Quanto cada colaboradora da minha equipe pagou de INSS em agosto de 2023?
-Pensamento: {user} deseja saber o valor que cada colaboradora de sua equipe pagou de INSS em agosto de 2023. Devo primeiro descobrir quem são as colaboradoras da equipe de {user}, utilizando a ação Assistente_Cadastro_Funcionarios, para, em seguida, descobrir quanto cada uma pagou de INSS utilizando a ação Assistente_Recibos_Funcionarios. Por fim, devo retornar a informação ao usuário.
-Ação: Assistente_Cadastro_Funcionarios
+Pensamento: {user} deseja saber o valor que cada colaboradora de sua equipe pagou de INSS em agosto de 2023. Devo primeiro descobrir quem são as colaboradoras da equipe de {user}, utilizando a ação Assistente_Dados_Pessoais_E_Subordinados, para, em seguida, descobrir quanto cada uma pagou de INSS utilizando a ação Assistente_Recibos_Funcionarios. Por fim, devo retornar a informação ao usuário.
+Ação: Assistente_Dados_Pessoais_E_Subordinados
 Texto da Ação: Quem são as colaboradoras da equipe do colaborador {user}?
 Observação: As colaboradoras da equipe do colaborador {user} são: ANA DA SILVA, MARIA PAULA PEREIRA.
 Pensamento: Agora sei que as colaboradoras da equipe de {user} são ANA DA SILVA e MARIA PAULA PEREIRA. Devo utilizar a ação Assistente_Recibos_Funcionarios para descobrir quanto cada uma pagou de INSS em agosto de 2023. Após isso, devo retornar as informações ao usuário.
@@ -95,6 +149,12 @@ Texto da Ação: Quanto ANA DA SILVA e MARIA PAULA PEREIRA pagaram cada uma de I
 Observação: ANA DA SILVA pagou R$ 100,00 de INSS em agosto de 2023. MARIA PAULA PEREIRA pagou R$ 200,00 de INSS em agosto de 2023.
 Pensamento: Agora sei que ANA DA SILVA pagou R$ 100,00 de INSS em agosto de 2023 e que MARIA PAULA PEREIRA pagou R$ 200,00 de INSS em agosto de 2023. Devo retornar as informações ao usuário.
 Finalizar: ANA DA SILVA pagou R$ 100,00 de INSS em agosto de 2023 e MARIA PAULA PEREIRA pagou R$ 200,00 de INSS em agosto de 2023. Algo mais que deseje saber?
+
+Exemplo 7:
+Mensagem: Quantos colaboradores há na MRKL?
+Pensamento: {user} deseja saber quantos colaboradores há na MRKL. Como possuo acesso a apenas a base de dados dos seus subordinados e não da empresa inteira, não posso responder a pergunta. Devo retornar uma mensagem ao usuário informando que não possuo acesso a tal informação.
+Finalizar: Infelizmente não possuo acesso a tal informação. Algo mais que deseje saber?
+
 """
 
 chatbot_prompt = """Você é um assistente de chat baseado em Inteligência Artificial desenvolvido pela NeuralMind para
@@ -111,7 +171,7 @@ Observação, respeitando sempre o seguinte formato:
 
 Mensagem: Mensagem do usuário a ser processada
 Pensamento: Raciocínio sobre a situação atual e o que deve ser feito para responder à mensagem
-Ação: Se usada, deve obrigatoriamente ser uma dentre Assistente_Cadastro_Funcionarios ou Assistente Recibos_Funcionarios
+Ação: Se usada, deve obrigatoriamente ser uma dentre as listadas abaixo
 Texto da Ação: Entrada da ação escolhida
 Observação: Retorno da ação escolhida
 ... (Essa sequência Pensamento/Ação/Texto da Ação/Observação pode se repetir quantas vezes forem necessárias)
