@@ -48,7 +48,11 @@ class ChatbotLLM(CustomLLM):
 
     def manually_generate_answer(self, failed_answer: str):
         prompt = self.current_prompt + failed_answer + "\nResposta: "
-        print('manually generated answer prompt: ', prompt)
+        answer = super()._call(prompt)
+        return answer
+    
+    def manually_generate_action(self, failed_action_generation: str):
+        prompt = self.current_prompt + failed_action_generation + "\nAção: "
         answer = super()._call(prompt)
         return answer
     

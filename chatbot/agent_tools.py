@@ -1,14 +1,17 @@
 
+from typing import Any, Union
 from langchain.prompts import PromptTemplate
-from langchain.sql_database import SQLDatabase
-from langchain_experimental.sql import SQLDatabaseChain
+import sqlite3
 from langchain.chains import LLMChain
 from langchain.chains import GraphCypherQAChain
+from langchain.callbacks.base import BaseCallbackHandler
 from langchain.graphs import Neo4jGraph
 from langchain.prompts import StringPromptTemplate
 import pandas as pd
+from neo4j import exceptions
 
-from chatbot.prompts import sql_chain_prompt, personal_data_prompt_template, cypher_query_prompt_template, cypher_qa_prompt_template
+
+from chatbot.prompts import receipts_chain_prompt, personal_data_prompt_template, cypher_query_prompt_template, cypher_qa_prompt_template
 
 from chatbot.llm import CustomLLM
 import streamlit as st
@@ -41,9 +44,11 @@ class RecibosFuncionariosPrompt(StringPromptTemplate):
 
     template: str
     user_name: str
+    receipt_data: str
 
     def format(self, **kwargs) -> str:
         kwargs['user_name'] = self.user_name
+        kwargs['receipt_data'] = self.receipt_data
         return self.template.format(**kwargs)
 
 def get_cypher_qa_chain(user_name: str):
@@ -64,11 +69,11 @@ def get_cypher_qa_chain(user_name: str):
 
     cypher_qa_chain = GraphCypherQAChain(
         graph=graph,
-        graph_schema=graph.schema,
+        graph_schema=graph.get_schema,
         verbose=True,
         cypher_generation_chain=cypher_generation_chain,
         qa_chain=qa_chain,
-        top_k=20,
+        top_k=20
     )
 
     return cypher_qa_chain
@@ -86,26 +91,26 @@ def get_personal_data_chain(user_name: str):
     personal_data_prompt = PersonalDataPrompt(
         input_variables=["query"], template=personal_data_prompt_template, personal_data=personal_data, user_name=user_name)
     
-    runnable = LLMChain(llm=llm, prompt=personal_data_prompt)
+    personal_data_chain = LLMChain(llm=llm, prompt=personal_data_prompt)
 
-    return runnable
+    return personal_data_chain
 
-def get_db_chain_recibos_funcionarios(user_name: str):
+def get_personal_receipts_chain(user_name: str):
 
-    db_recibos_funcionarios = SQLDatabase.from_uri("sqlite:///./chatbot/chatbot_data/recibos_funcionarios.db")
+    file_path = './chatbot/chatbot_data/recibos.xlsx'
 
-    prompt_template_sql = RecibosFuncionariosPrompt(
+    df = pd.read_excel(file_path)
+
+    filtered_data = df[df['NOME'] == user_name]
+    df.drop("NOME", axis=1, inplace=True)
+
+    prompt_template_receipts = RecibosFuncionariosPrompt(
         input_variables=['input', 'table_info', 'top_k'],
-        template=sql_chain_prompt,
-        user_name=user_name
+        template=receipts_chain_prompt,
+        user_name=user_name,
+        receipt_data=filtered_data.to_string(index=False)
     )
 
-    db_chain_recibos_funcionarios = SQLDatabaseChain(
-        database=db_recibos_funcionarios,
-        llm_chain=LLMChain(prompt=prompt_template_sql, llm=llm),
-        top_k=20,
-        verbose=True,
-        use_query_checker=True
-    )
+    personal_receipts_chain = LLMChain(llm=llm, prompt=prompt_template_receipts)
 
-    return db_chain_recibos_funcionarios
+    return personal_receipts_chain

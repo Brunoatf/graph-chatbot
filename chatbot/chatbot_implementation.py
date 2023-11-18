@@ -1,32 +1,18 @@
-import langchain
-from langchain.utilities import SQLDatabase
-from langchain.llms import OpenAI
-from langchain_experimental.sql import SQLDatabaseChain
 from langchain.agents import Tool, AgentExecutor, LLMSingleActionAgent, AgentOutputParser
 from langchain.prompts import StringPromptTemplate
-from langchain.llms import OpenAI
-from langchain.utilities import SerpAPIWrapper
 from langchain.chains import LLMChain
 from typing import List, Union
-from langchain.schema import AgentAction, AgentFinish, OutputParserException
+from langchain.schema import AgentAction, AgentFinish
 from langchain.memory import ConversationSummaryBufferMemory
-from langchain.prompts.few_shot import FewShotPromptTemplate
-from langchain.prompts.prompt import PromptTemplate
 import re
 import streamlit as st
-import os
-from langchain.callbacks.streaming_stdout_final_only import (
-    FinalStreamingStdOutCallbackHandler,
-)
 from chatbot.llm import ChatbotLLM
-
 from chatbot.prompts import chatbot_few_shots_manager, chatbot_few_shots_employee, chatbot_prompt
-from chatbot.agent_tools import get_cypher_qa_chain, get_personal_data_chain, get_db_chain_recibos_funcionarios
+from chatbot.agent_tools import get_cypher_qa_chain, get_personal_data_chain, get_personal_receipts_chain
 from chatbot.chatbot_data.graph_manager import employees_graph
-
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-
 import warnings
+
 warnings.filterwarnings("ignore", message="Importing llm_cache from langchain root module is no longer supported. ")
 
 class CallbackHandler(StreamingStdOutCallbackHandler):
@@ -82,6 +68,7 @@ class CustomPromptTemplate(StringPromptTemplate):
 class CustomOutputParser(AgentOutputParser):
 
     llm: ChatbotLLM
+    allowed_tools: List[str]
 
     def parse(self, llm_output: str) -> Union[AgentAction, AgentFinish]:
 
@@ -102,6 +89,10 @@ class CustomOutputParser(AgentOutputParser):
                 log=f"Could not parse LLM output: `{llm_output}`. Manually generated answer: `{answer}`"
             )
         action = match.group(1).strip()
+        if action not in self.allowed_tools:
+            disclaimer = f"A ação {action} não existe, use obrigatoriamente uma dentre {self.allowed_tools}."
+            llm_output += f"\n{disclaimer}"
+            action = self.llm.manually_generate_action(llm_output) 
         action_input = match.group(2)
         # Return the action and action input
         return AgentAction(tool=action, tool_input=action_input.strip(" ").strip('"'), log=llm_output)
@@ -143,7 +134,7 @@ class ChatBot():
         llm_chain = LLMChain(llm=llm, prompt=self.prompt)
 
         #Chatbot output parser:
-        output_parser = CustomOutputParser(llm=llm)
+        output_parser = CustomOutputParser(llm=llm, allowed_tools=[tool.name for tool in self.tools])
 
         #Initialize agent:
         self.agent = LLMSingleActionAgent(
@@ -160,8 +151,8 @@ class ChatBot():
             tools.append(Tool(
                 name="Assistente_Dados_Pessoais_E_Subordinados",
                 func=cypher_qa_chain.run,
-                description="""Assistente capaz de consultar dados pessoais/cadastrais de 
-            {new_name} e dos seus subordinados, com exceção de recibos. Não é capaz de consultar dados gerais de funcionários da MRKL."""
+                description="""Assistente capaz de consultar simultaneamente múltiplos dados pessoais/cadastrais de 
+            {new_name} e dos seus subordinados, além de recibos. Permite obter estatísticas e valores relacionados aos funcionários e seus recibos."""
             ))
         else:
             personal_data_chain = get_personal_data_chain(user_name=new_name)
@@ -169,16 +160,15 @@ class ChatBot():
                 tools.append(Tool(
                     name="Assistente_Dados_Pessoais",
                     func=personal_data_chain.run,
-                    description="""Assistente capaz de consultar dados pessoais/cadastrais do usuário, com exceção de recibos. ão é capaz de consultar dados gerais de funcionários da MRKL ou dados de subordinados, uma vez que o usuário não é um gestor e, portanto, não possui subordinados."""
+                    description="""Assistente capaz de consultar dados pessoais/cadastrais do usuário, com exceção de recibos. Não é capaz de consultar dados gerais de funcionários da MRKL ou dados de subordinados, uma vez que o usuário não é um gestor e, portanto, não possui subordinados."""
                 ))
-
-        db_chain_recibos_funcionarios = get_db_chain_recibos_funcionarios(user_name=new_name)
-        if db_chain_recibos_funcionarios is not None:
-            tools.append(Tool(
-                name="Assistente_Recibos_Funcionarios",
-                func=db_chain_recibos_funcionarios.run,
-                description="""Assistente capaz consultar dados relacionados a recibos e pagamentos de funcionários. Não é capaz de consultar dados pessoais ou informações relacionadas a estrutura de equipes e subordinados. Útil para solicitar a geração/consulta de recibos. Forneca SEMPRE o nome completo do funcionário em relação ao qual deseja consultar dados."""
-            ))
+            personal_recepits_chain = get_personal_receipts_chain(user_name=new_name)
+            if personal_recepits_chain is not None:
+                tools.append(Tool(
+                    name="Assistente_Recibos",
+                    func=personal_recepits_chain.run,
+                    description="""Assistente capaz de consultar recibos de pagamento do usuário."""
+                ))        
         
         return tools
     

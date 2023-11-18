@@ -11,7 +11,7 @@ class CompanyGraph():
         self.password = "LyvEFa1Eyf0VtMaELDfjqW6uyaF3pckSRDLY0z_koQU"
 
     # Função para importar dados de um DataFrame para o Neo4j
-    def import_dataframe_to_neo4j(self, tx, df):
+    def import_employee_dataframe_to_neo4j(self, tx, df):
         query = """
         UNWIND $data AS row
         CREATE (p:Colaborador)
@@ -19,9 +19,25 @@ class CompanyGraph():
         """
         data = df.to_dict(orient="records")
         tx.run(query, data=data)
+
+    def import_receipts_dataframe_to_neo4j(self, tx, df):
+        query = """
+        UNWIND $data AS row
+        CREATE (p:RecibosMensais)
+        SET p = row
+        """
+        data = df.to_dict(orient="records")
+        tx.run(query, data=data)
+
+    def set_receipts_relationships(self, tx):
+        query = """
+        MATCH (p1:Colaborador), (p2:RecibosMensais)
+        WHERE p1.`NOME` = p2.`NOME`
+        CREATE (p1)-[:Recebeu]->(p2)"""
+        tx.run(query)
     
     #Função para incluir as relações de gestor: 
-    def set_relationships(self, tx):
+    def set_employer_relationships(self, tx):
         query = """
         MATCH (p1:Colaborador), (p2:Colaborador)
         WHERE p1.`NOME` = p2.GESTOR   
@@ -29,28 +45,46 @@ class CompanyGraph():
         """
         tx.run(query)
 
-    def create_graph(self, excel_file_path):
+    def create_graph(self):
 
         """Creates the graph in the Neo4J database using the provided URI and auth"""
 
-        # Caminho para o arquivo Excel
-        excel_file_path = "chatbot/chatbot_data/colaboradores.xlsx"
+        #Path for excel files:
+        employees = "chatbot/chatbot_data/colaboradores.xlsx"
+        receipts = "chatbot/chatbot_data/recibos_estruturado.xlsx"
 
-        # Leia o Excel usando Pandas
-        df = pd.read_excel(excel_file_path)
+        df_employees = pd.read_excel(employees)
+        df_receipts = pd.read_excel(receipts)
 
-        for column in df.columns:
+        for column in df_employees.columns:
             if " " in column:
                 new_name = column.replace(" ", "_")
-                df.rename(columns={column: new_name}, inplace=True)
+                df_employees.rename(columns={column: new_name}, inplace=True)
 
+        for column in df_receipts.columns:
+            if " " in column:
+                new_name = (column.replace(" ", "_")).replace("-", "_")
+                df_receipts.rename(columns={column: new_name}, inplace=True)
+
+        for employee_name in df_employees["NOME"].unique():
+            for year in df_receipts["ANO"].unique():
+                for month in df_receipts["MÊS"].unique():
+                    if not ((df_receipts["NOME"] == employee_name) & (df_receipts["ANO"] == year) & (df_receipts["MÊS"] == month)).any():
+                        new_line = {coluna: [0] for coluna in df_receipts.columns}
+                        new_line["NOME"] = employee_name
+                        new_line["ANO"] = year
+                        new_line["MÊS"] = month
+                        df_receipts = pd.concat([df_receipts, pd.DataFrame(new_line)], ignore_index=True)
+            
         # Crie uma instância do driver
         driver = GraphDatabase.driver(self.uri, auth=(self.user, self.password))
 
         # Execute a importação para o Neo4j
         with driver.session() as session:
-            session.execute_write(self.import_dataframe_to_neo4j, df)
-            session.execute_write(self.set_relationships)
+            session.execute_write(self.import_employee_dataframe_to_neo4j, df_employees)
+            session.execute_write(self.import_receipts_dataframe_to_neo4j, df_receipts)
+            session.execute_write(self.set_employer_relationships)
+            session.execute_write(self.set_receipts_relationships)
 
         # Feche a conexão com o driver
         driver.close()
@@ -108,4 +142,4 @@ class CompanyGraph():
 employees_graph = CompanyGraph()
 
 if __name__ == "__main__":
-    employees_graph.create_graph("chatbot/chatbot_data/colaboradores.xlsx")
+    employees_graph.create_graph()
