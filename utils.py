@@ -1,9 +1,7 @@
 import re
 import pandas as pd
 from io import BytesIO, StringIO
-from pypandoc import convert_text
 from datetime import datetime
-import markdown
 from docx import Document
 from docx.shared import Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
