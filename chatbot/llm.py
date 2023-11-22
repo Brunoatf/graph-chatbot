@@ -26,6 +26,7 @@ class CustomLLM(LLM):
             model_name=self.model_name,
             openai_api_key=os.getenv('openai_api_key'),
             streaming=True,
+            max_tokens=2048,
             **kwargs
         )
                         

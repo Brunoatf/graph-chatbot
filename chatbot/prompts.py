@@ -11,7 +11,7 @@ Dadas as informações abaixo, você deve retornar uma resposta direta à solici
 
 Dados cadastrais:
 {receipt_data}
-Solicitação: {query}get_db_chain_recibos_funcionarios
+Solicitação: {query}
 Resposta:"""
 
 chatbot_few_shots_employee = """Exemplo 1:
@@ -58,6 +58,7 @@ Finalizar: Os recibos de janeiro de 2023 do colaborador {user} são:
 | Salário | R$5000,00 |
 | Vale transporte | R$200,00 |
 | Vale refeição | R$500,00 |
+
 
 Algo mais que deseje saber?
 
@@ -122,13 +123,23 @@ Finalizar: Os recibos de janeiro de 2023 do colaborador {user} são:
 | Vale transporte | R$200,00 |
 | Vale refeição | R$500,00 |
 
+
 Algo mais que deseje saber?
 
 Exemplo 5:
 Mensagem: Olá, meu nome é {user}.
 Pensamento: O usuário, chamado {user}, está cumprimentando. Não há necessidade de realizar nenhuma ação de pesquisa nas bases de dados da MRKL.
 Devo me apresentar e cumprimentá-lo cordialmente. 
-Finalizar: Olá {user}, tudo bem? Como posso ajudá-lo? Se tiver alguma dúvida relacionada a base de dados de recursos humanos da MRKL é só perguntar."""
+Finalizar: Olá {user}, tudo bem? Como posso ajudá-lo? Se tiver alguma dúvida relacionada a base de dados de recursos humanos da MRKL é só perguntar.
+
+Exemplo 6: Qual é a diferença entre o maior e o menor salário da empresa?
+Pensamento: {user} deseja saber qual é a diferença entre o maior e o menor salário da empresa. Devo utilizar a ação Assistente_Dados_Pessoais_E_Subordinados e pesquisar a diferença entre o maior e o menor salário da empresa, uma vez que essa ação é capaz de realizar operações matemáticas e estatísticas sobre os dados consultados. Por fim, devo retornar a informação ao usuário.
+Ação: Assistente_Dados_Pessoais_E_Subordinados
+Texto da Ação: Qual é a diferença entre o maior e o menor salário da empresa?
+Observação: A diferença entre o maior e o menor salário da empresa é R$ 5000,00.
+Pensamento: Agora sei que a diferença entre o maior e o menor salário da empresa é R$ 5000,00. Devo retornar tal informação ao usuário.
+Finalizar: A diferença entre o maior e o menor salário da empresa é R$ 5000,00.
+"""
 
 chatbot_prompt = """Você é um assistente de chat baseado em Inteligência Artificial desenvolvido pela NeuralMind para
 responder a perguntas do colaborador {user} sobre o domínio base de dados de recursos humanos da MRKL. Você deve seguir as seguintes regras
@@ -184,8 +195,9 @@ cypher_qa_prompt_template = """Você é um assistente responsável por formatar 
 
 Siga as seguintes regras rigorosamente:
 
-1 - Por vezes as informações retornadas farão referências a recibos de funcionários em uma empresa. Nesses casos, a não ser que a pesquisa explicite, ignore recibos com valor igual a 0 e não inclua-os na resposta final.
-2 - Todos os valores monetários envolvidos nas pesquisas estão em reais (R$).
+1 - Todos os valores monetários envolvidos nas pesquisas estão em reais (R$).
+2 - Os valores retornados pelo sistema de buscas está em formato americano, ou seja, com ponto como separador decimal e vírgula como separador do milhar.
+3 - Você deve responder utilizando números no formato brasileiro, ou seja, com vírgula como separador decimal e ponto como separador do milhar.
 
 Exemplos fictícios (não os utilize para reportar respostas):
 
@@ -203,6 +215,18 @@ Exemplo 3:
 Pesquisa realizada: Qual é o CPF do colaborador com o maior salário nascido em 1990?
 Informações retornadas: [{{"CPF": "123.456.789-00"}}]
 Resposta formatada: O CPF do colaborador com o maior salário nascido em 1990 é 123.456.789-00.
+
+Exemplo 4:
+Pesquisa realizada: Quais foram os recibos de Thiago Santana em agosto de 2023?
+Informações retornadas: [{{"Emprestimos Ferias": 0.00, "Salário": 5000.00, "INSS": 400.00, "FGTS": 700.00, "Pensao Alimenticia": 0.00, "Vale Refeição": 100.00, "Vale Transporte": 100.00, "Plano de Saúde": 200.00, "Plano Odontológico": 100.00, "Auxilio Creche": 0.00, "Convenio Farmacia": 0.00, "Horas extras": 0.00, "Adicional noturno": 0.00}}]
+Resposta formatada: OS recibos de Thiago Santana em agosto de 2023 foram:
+- Salário: R$ 5.000,00
+- INSS: R$ 400,00
+- FGTS: R$ 700,00
+- Vale Refeição: R$ 100,00
+- Vale Transporte: R$ 100,00
+- Plano de Saúde: R$ 200,00
+- Plano Odontológico: R$ 100,00
 
 Agora é a sua vez, lembre-se de nunca utilizar as informações dos exemplos acima em suas respostas:
 

@@ -92,7 +92,9 @@ class CustomOutputParser(AgentOutputParser):
         if action not in self.allowed_tools:
             disclaimer = f"A ação {action} não existe, use obrigatoriamente uma dentre {self.allowed_tools}."
             llm_output += f"\n{disclaimer}"
-            action = self.llm.manually_generate_action(llm_output) 
+            action_generation = self.llm.manually_generate_action(llm_output)
+            match = re.search(regex, action_generation, re.DOTALL)
+            action = match.group(1).strip()
         action_input = match.group(2)
         # Return the action and action input
         return AgentAction(tool=action, tool_input=action_input.strip(" ").strip('"'), log=llm_output)
@@ -151,8 +153,9 @@ class ChatBot():
             tools.append(Tool(
                 name="Assistente_Dados_Pessoais_E_Subordinados",
                 func=cypher_qa_chain.run,
-                description="""Assistente capaz de consultar simultaneamente múltiplos dados pessoais/cadastrais de 
-            {new_name} e dos seus subordinados, além de recibos. Permite obter estatísticas e valores relacionados aos funcionários e seus recibos."""
+                description="""Assistente capaz de consultar simultaneamente múltiplos dados pessoais/cadastrais, recibos e estatísticas de 
+            {new_name} e dos seus subordinados, além de efetuar operações matemáticas sobre esses valores. Considere que essa ação não possui memória nem conhecimento da conversa e, portanto,
+            todas as consultas a ela devem ser elaboradas de modo completo."""
             ))
         else:
             personal_data_chain = get_personal_data_chain(user_name=new_name)
