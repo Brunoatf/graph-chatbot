@@ -14,6 +14,7 @@ def extract_table(message: str):
 
     if table_match:
         markdown_table = table_match.group()
+        print("Markdown table found:", markdown_table)
     else:
         markdown_table = ""
 
@@ -34,6 +35,7 @@ def markdown_table_to_excel(md_table):
     clean_table = '\n'.join([line[1:-1] for line in lines])
 
     df = pd.read_csv(StringIO(clean_table), sep='|', skipinitialspace=True)
+    print("Markdown to dataframe completed:", df.head())
 
     return convert_df_to_excel(df)
 
