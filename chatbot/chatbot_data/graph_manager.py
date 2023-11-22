@@ -101,7 +101,7 @@ class CompanyGraph():
             result = session.run("""MATCH (c:Colaborador {NOME: $name})-[:Gere*]->(subordinado)
                                     RETURN COUNT(DISTINCT subordinado) AS NumeroDeSubordinados""", name=name)
             subordinates = result.single()
-            print("subord data", result.single())
+
             if subordinates is not None:
                 subordinates = subordinates[0]
             else: 
