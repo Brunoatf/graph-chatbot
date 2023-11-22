@@ -81,7 +81,7 @@ if prompt := st.chat_input():
                 st.session_state.table_counter += 1
 
         except Exception as e:
-            st.error(f"Ocorreu um erro no processamento da mensagem. Tente novamente.")
+            st.error(f"Ocorreu um erro no processamento da mensagem. Tente novamente.{e}")
         st.session_state.stream = False
 
 with st.sidebar:
