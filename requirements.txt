@@ -9,3 +9,4 @@ trubrics>=1.4.3
 streamlit-feedback
 neo4j
 python-docx
+openpyxl
