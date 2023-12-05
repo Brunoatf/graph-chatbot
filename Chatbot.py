@@ -34,11 +34,12 @@ if "messages" not in st.session_state:
     ]
 
     st.session_state.stream = False
+    st.session_state.disable_input = False
     st.session_state.chatbot = ChatBot(st.session_state.user_name)
 
 with st.sidebar:
     st.write("ℹ️ Antes de iniciar uma conversa, forneca o seu nome completo para obter uma experiência personalizada.")
-    user_name = st.text_input("Seu nome completo", key="chatbot_user_name")
+    user_name = st.text_input("Seu nome completo", key="chatbot_user_name", disabled=st.session_state.disable_input)
     st.write("ℹ️ As informações retornadas ao longo da conversa fazem referência a dados de uma empresa fictícia chamada MRKL, criada apenas para fins de demonstração.")
     
 st.title("💬 ChatBot RH - Versão de Testes")
@@ -52,7 +53,10 @@ for msg in st.session_state.messages:
     elif msg["role"] == "button":
         st.download_button("Baixar tabela como arquivo Excel", msg["content"]["file"], file_name=msg["content"]["name"])
 
-if prompt := st.chat_input():
+def disable_input():
+    st.session_state.disable_input = True
+
+if prompt := st.chat_input(disabled=st.session_state.disable_input, on_submit=disable_input, placeholder="Digite sua mensagem aqui..."):
     
     if not user_name:
         st.info("Por favor adicione o seu nome completo para continuar.")
@@ -64,25 +68,27 @@ if prompt := st.chat_input():
 
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
+    with st.spinner("Aguarde enquanto sua mensagem é processada..."):
+        with st.chat_message("assistant"):
+            st.session_state["container"] = st.empty()
+            container = st.session_state.container
+            try:
+                response = st.session_state.chatbot(prompt)
+                st.session_state.messages.append({"role": "assistant", "content": response})
+                container.write(response.replace("$", "\$")) #For avoiding LaTeX rendering
 
-    with st.chat_message("assistant"):
-        st.session_state["container"] = st.empty()
-        container = st.session_state.container
-        try:
-            response = st.session_state.chatbot(prompt)
-            st.session_state.messages.append({"role": "assistant", "content": response})
-            container.write(response.replace("$", "\$")) #For avoiding LaTeX rendering
+                extracted_table = extract_table(response)
+                if extracted_table:
+                    file = markdown_table_to_excel(extracted_table)
+                    st.session_state.messages.append({"role": "button", "content": {"file": file, "name": f"tabela_{st.session_state.table_counter}.xlsx"}})
+                    st.download_button("Baixar tabela como arquivo Excel", file, file_name=f"tabela_{st.session_state.table_counter}.xlsx")
+                    st.session_state.table_counter += 1
 
-            extracted_table = extract_table(response)
-            if extracted_table:
-                file = markdown_table_to_excel(extracted_table)
-                st.session_state.messages.append({"role": "button", "content": {"file": file, "name": f"tabela_{st.session_state.table_counter}.xlsx"}})
-                st.download_button("Baixar tabela como arquivo Excel", file, file_name=f"tabela_{st.session_state.table_counter}.xlsx")
-                st.session_state.table_counter += 1
-
-        except Exception as e:
-            st.error(f"Ocorreu um erro no processamento da mensagem. Tente novamente.")
-        st.session_state.stream = False
+            except Exception as e:
+                st.error(f"Ocorreu um erro no processamento da mensagem. Tente novamente.")
+            st.session_state.stream = False
+            st.session_state.disable_input = False
+            st.rerun()
 
 with st.sidebar:
     st.write("👇 Você pode baixar a conversa atual como um documento Word clicando no botão abaixo.")
