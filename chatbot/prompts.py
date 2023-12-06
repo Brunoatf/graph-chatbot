@@ -273,9 +273,6 @@ POSICOES_PCD: "SIM" se o colaborador é pessoa com deficiência, vazio caso cont
 CODIGO_DO_CARGO: 997697, 997747
 DATA_DE_ADMISSÃO: 2022-01-06T00:00:00, 2020-04-06T00:00:00
 PROJETO_DE_TRABALHO: "GLOBENET", "2020 - REESTRUTURACAO VISAGIO"
-NIVEL_HIERARQUICO: "PRESIDENTE", "VICE-PRESIDENTE"
-GRUPO_HIERÁRQUICO: "PRESIDENCIA", "INFRA PARA VAREJO"
-CÓDIGO_GRUPO_HIERÁRQUICO
 GESTOR: "-", "JOÃO FONSECA DA SILVA"
 CENTRO_DE_CUSTOS: "DIR PRESIDENCIA", "ATACADO E FRANQUIAS"
 CÓDIGO_CENTRO_DE_CUSTOS: "CMR00970000", "CMR04740000"
@@ -284,6 +281,17 @@ Status_orçamento: "ORCADO", "ORCADO"
 GRADE: 30, 25
 TIPO_CC: "OPEX", "CAPEX"
 LICENCIADOS: L +1 ANO ou vazio
+NIVEL_HIERARQUICO: Nível do cargo do colaborador na hierarquia da empresa
+GRUPO_HIERÁRQUICO: Área do colaborador na empresa
+CÓDIGO_GRUPO_HIERÁRQUICO
+
+As seguintes propriedades definem os conjuntos que o colaborador faz parte em diferentes níveis da hierarquia da empresa. Sempre que a pergunta mencionar N1, N2, N3, N4, N5, vice-presidências (VPs), diretorias, gerências, coordenações ou subcoordenações, utilize apenas os valores dessas propriedades: 
+
+N1: Indica a área da empresa e nível da Vice-Presidência que o colaborador faz parte
+N2: Indica o nível da diretoria que o colaborador faz parte. Todos os colabordores com determinado N2 estão em um mesmo N1.
+N3: Indica o nível da gerência que o colaborador faz parte. Todos os colabordores com determinado N3 estão em um mesmo N2.
+N4: Indica o nível da coordenação que o colaborador faz parte. Todos os colabordores com determinado N4 estão em um mesmo N3.
+N5: Indica o nível da subcoordenação que o colaborador faz parte. Todos os colaboradores com determinado N5 estão em um mesmo N4.
 
 Para os nós com label RecibosMensais (considere que os valores de todas as propriedades, com exceção de MÊS e ANO, estão em reais):
 
@@ -383,7 +391,8 @@ Para "estrutura" ou "subordinados", sem especificar se são diretos ou indiretos
 10. Considere que as propriedades dos nós RecibosMensais com valor 0 são nulas e não devem ser consideradas a não ser que seja explicitamente solicitado.
 11. Se não for possível gerar uma query cypher para a pergunta, responda APENAS com uma query vazia.
 12. Se a pergunta estiver em primeira pessoa, considere que ela é feita por um colaborador chamado {user_name}.
-13. Se a pergunta solcitar dados individuais de um grupo de indivíduos, faça uma query cypher que retorne, além dos dados solicitados, o nome de cada indivíduo.
+13. Se a pergunta solicitar dados individuais de um grupo de indivíduos, faça uma query cypher que retorne, além dos dados solicitados, o nome de cada indivíduo.
+14. Atente-se que os níveis N1,N2,N3,N4 e N5 não fazem referência à distâncias no grafo, apenas classificam o nível hierárquico de cada colaborador.  
 
 Exemplos fictícios de perguntas e queries Cypher geradas:
 
@@ -392,34 +401,44 @@ MATCH (c1:Colaborador)
 WHERE c1.SEXO = 'F' AND c1.SALÁRIO_EM_REAIS > 4000.0
 RETURN COUNT(c1) AS NumeroTotal
 
-Exemplo 2: Quais são os nomes dos colaboradores da equipe/subordinados diretos/time de ABDENAGO ZICA ABDALA ZUBA?
-MATCH (gestor:Colaborador{{NOME: 'ABDENAGO ZICA ABDALA ZUBA'}})-[:Gere]->(subordinado:Colaborador)
+Exemplo 2: Quais são os nomes dos colaboradores da equipe/subordinados diretos/time de {user_name}?
+MATCH (gestor:Colaborador{{NOME: '{user_name}'}})-[:Gere]->(subordinado:Colaborador)
 RETURN subordinado.NOME AS NomeColaborador
 
-Exemplo 3: Qual é a média salarial dos colaboradores que estão subordinados a ABDENAGO ZICA ABDALA ZUBA e que são casados?
-MATCH (gestor:Colaborador {{NOME: 'ABDENAGO ZICA ABDALA ZUBA'}})-[:Gere*]->(subordinado:Colaborador)
+Exemplo 3: Qual é a média salarial dos colaboradores que estão subordinados a {user_name} e que são casados?
+MATCH (gestor:Colaborador {{NOME: '{user_name}'}})-[:Gere*]->(subordinado:Colaborador)
 WHERE subordinado.ESTADO_CIVIL = 'Casado'
 RETURN AVG(subordinado.SALÁRIO_EM_REAIS) AS MediaSalarialCasadosEmReais
 
-Exemplo 4: Quantos colaboradores há nas equipes de cada um dos subordinados diretos de ABDENAGO ZICA ABDALA ZUBA?
-MATCH (gestor:Colaborador {{NOME: 'ABDENAGO ZICA ABDALA ZUBA'}})-[:Gere]->(subordinado:Colaborador)-[:Gere]->(colega:Colaborador)
+Exemplo 4: Quantos colaboradores há nas equipes de cada um dos subordinados diretos de {user_name}?
+MATCH (gestor:Colaborador {{NOME: '{user_name}'}})-[:Gere]->(subordinado:Colaborador)-[:Gere]->(colega:Colaborador)
 RETURN subordinado.NOME AS Subordinado, COUNT(colega) AS NumeroDeColaboradoresNaEquipe
 
 Exemplo 5: Faça um resumo dos meus recibos para o mês de agosto de 2023
 MATCH (c1:Colaborador {{NOME: '{user_name}'}})-[:Recebeu]->(r:RecibosMensais {{MÊS: 8, ANO: 2023}})
 RETURN r
 
-Exemplo 6: Quantos colaboradores da equipe/subordinados diretos de ABDENAGO ZICA ABDALA ZUBA receberam auxílio creche em agosto de 2023?
-MATCH (gestor:Colaborador {{NOME: 'ABDENAGO ZICA ABDALA ZUBA'}})-[:Gere]->(subordinado:Colaborador)-[:Recebeu]->(r:RecibosMensais {{MÊS: 8, ANO: 2023}})
+Exemplo 6: Quantos colaboradores da equipe/subordinados diretos de {user_name} receberam auxílio creche em agosto de 2023?
+MATCH (gestor:Colaborador {{NOME: '{user_name}'}})-[:Gere]->(subordinado:Colaborador)-[:Recebeu]->(r:RecibosMensais {{MÊS: 8, ANO: 2023}})
 WHERE r.AUXILIO_CRECHE > 0
 RETURN COUNT(subordinado) AS NumeroDeColaboradoresComAuxilioCreche
 
-Exemplo 7: Qual o valor total que os subordinados de ABDENAGO ZICA ABDALA ZUBA receberam em agosto de 2023?
-MATCH (gestor:Colaborador {{NOME: 'ABDENAGO ZICA ABDALA ZUBA'}})-[:Gere*]->(subordinado:Colaborador)-[:Recebeu]->(r:RecibosMensais {{MÊS: 8, ANO: 2023}})
+Exemplo 7: Qual o valor total que os subordinados de {user_name} receberam em agosto de 2023?
+MATCH (gestor:Colaborador {{NOME: '{user_name}'}})-[:Gere*]->(subordinado:Colaborador)-[:Recebeu]->(r:RecibosMensais {{MÊS: 8, ANO: 2023}})
 RETURN SUM(r.LIQUIDO_A_RECEBER) AS ValorTotalDosRecibos
 
-Exemplo 8: Liste para cada colaborador da equipe/subrodinados diretos de ABDENAGO ZICA ABDALA ZUBA: cargo e quanto pagou para o INSS em agosto de 2023.
-MATCH (gestor:Colaborador {{NOME: 'ABDENAGO ZICA ABDALA ZUBA'}})-[:Gere]->(subordinado:Colaborador)-[:Recebeu]->(r:RecibosMensais {{MÊS: 8, ANO: 2023}})
+Exemplo 8: Liste para cada colaborador da equipe/subrodinados diretos de {user_name}: cargo e quanto pagou para o INSS em agosto de 2023.
+MATCH (gestor:Colaborador {{NOME: '{user_name}'}})-[:Gere]->(subordinado:Colaborador)-[:Recebeu]->(r:RecibosMensais {{MÊS: 8, ANO: 2023}})
 RETURN subordinado.NOME as Nome, subordinado.CARGO AS Cargo, r.INSS_MES AS ValorPagoParaINSS
+
+Exemplo 9: Quantas pessoas há no nível N3/gerência de {user_name}?
+MATCH (c1:Colaborador {{NOME: '{user_name}'}})
+MATCH (c2:Colaborador)
+WHERE c1.N3 = c2.N3 
+RETURN COUNT(c2) AS NumeroDeColaboradoresComMesmoN3
+
+Exemplo 10: Quantos subordinados de {user_name} estão em cada N4?
+MATCH (c1:Colaborador {{NOME: '{user_name}'}})-[:Gere*]->(c2:Colaborador)
+RETURN c2.N4 AS N4, COUNT(c2) AS NumeroDeColaboradoresComMesmoN4
 
 {question}"""

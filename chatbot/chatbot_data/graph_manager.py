@@ -115,6 +115,31 @@ class CompanyGraph():
         else:
             return False
         
+    def user_exists(self, name:str):
+
+        """Checks if user exists in the graph"""
+
+        driver = GraphDatabase.driver(self.uri, auth=(self.user, self.password))
+
+        name = name.upper()
+
+        with driver.session() as session:
+            result = session.run("""MATCH (c:Colaborador {NOME: $name})
+                                    RETURN COUNT(c) AS NumeroDeColaboradores""", name=name)
+            user = result.single()
+
+            if user is not None:
+                user = user[0]
+            else: 
+                user = 0
+        
+        driver.close()
+
+        if user > 0:
+            return True
+        else:
+            return False
+        
     def get_personal_data(self, name: str):
 
         """Gets the personal data of the provided name"""

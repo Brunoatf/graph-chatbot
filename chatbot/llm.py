@@ -9,6 +9,12 @@ import os
 class CustomLLM(LLM):
 
     model_name: str = "gpt-3.5-turbo-16k"
+    encapsuled_model: ChatOpenAI = ChatOpenAI(
+        model_name=model_name,
+        openai_api_key=os.getenv('openai_api_key'),
+        streaming=True,
+        max_tokens=2048,
+    )
 
     @property
     def _llm_type(self) -> str:
@@ -21,14 +27,6 @@ class CustomLLM(LLM):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> str:
-
-        encapsuled_model = ChatOpenAI(
-            model_name=self.model_name,
-            openai_api_key=os.getenv('openai_api_key'),
-            streaming=True,
-            max_tokens=2048,
-            **kwargs
-        )
                         
         messages = [
             HumanMessage(
@@ -36,7 +34,9 @@ class CustomLLM(LLM):
             )
         ]
         
-        response = encapsuled_model(messages, stop, run_manager, **kwargs)
+        print("Open AI called")
+        response = self.encapsuled_model(messages, stop, run_manager, **kwargs)
+        print("Response received")
 
         return(response.content)
     
