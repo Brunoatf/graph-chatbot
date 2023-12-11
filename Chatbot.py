@@ -54,37 +54,38 @@ for msg in st.session_state.messages:
     elif msg["role"] == "button":
         st.download_button("Baixar tabela como arquivo Excel", msg["content"]["file"], file_name=msg["content"]["name"])
 
-def disable_input():
+def disable_input() -> None:
     st.session_state.disable_input = True
 
-def process_message(prompt: str):
+def end_processing() -> None:
+    st.session_state.disable_input = False
+    st.rerun()
 
-    print("Starting message processing")
+def process_message(prompt: str) -> None:
+
+    '''Processes the provided message and write the response to the session state.'''
+
+    st.session_state.messages.append({"role": "user", "content": prompt})
 
     if not user_name:
-        st.session_state.messages.append({"role": "user", "content": prompt})
         st.session_state.messages.append({"role": "assistant",
                                    "content": "Por favor, adicione o seu nome completo para continuar."})
-        st.session_state.disable_input = False
-        st.rerun()
+        end_processing()
 
     if user_name != st.session_state.user_name:
         st.session_state.user_name = user_name
         st.session_state.chatbot.user_name = user_name.upper()
 
     if not employees_graph.user_exists(user_name):
-        st.session_state.messages.append({"role": "user", "content": prompt})
         st.session_state.messages.append({"role": "assistant",
                  "content": f"Não consegui processar a sua mensagem porque o nome de usuário '{user_name}' não foi encontrado na minha base de dados. Por favor, verifique o nome digitado e tente novamente."})
-        st.session_state.disable_input = False
-        st.rerun()
+        end_processing()
 
-    st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
     with st.spinner("Aguarde enquanto sua mensagem é processada..."):
         with st.chat_message("assistant"):
             st.session_state["container"] = st.empty()
-            container = st.session_state.container
+            container = st.session_state.container #stores the streaming response
 
             try:
                 response = st.session_state.chatbot(prompt)
@@ -103,8 +104,7 @@ def process_message(prompt: str):
                     "content": f"Ocorreu um erro no processamento da mensagem. Tente novamente."})
             
             st.session_state.stream = False
-            st.session_state.disable_input = False
-            st.rerun()
+            end_processing()
 
 if prompt := st.chat_input(disabled=st.session_state.disable_input, on_submit=disable_input, placeholder="Digite sua mensagem aqui..."):
     process_message(prompt)

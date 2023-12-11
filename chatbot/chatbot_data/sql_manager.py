@@ -2,50 +2,57 @@ import sqlite3
 import csv
 import openpyxl
 
-# Nome dos bancos de dados SQLite e suas respectivas tabelas
-bancos_de_dados = {
-    'recibos_funcionarios.db': {
-        "recibos_funcionarios": "chatbot/chatbot_data/recibos.xlsx",
-    }
-}
+class SqlManager():
 
-for banco_de_dados in bancos_de_dados:
+    def __init__(self):
+    
+        #Dict containing databases and their tables
+        self.databases = {
+            'recibos_funcionarios.db': {
+                "recibos_funcionarios": "chatbot/chatbot_data/data_files/recibos.xlsx",
+            }
+        }
 
-    print("Criando banco de dados: ", banco_de_dados)
+    def create_databases(self):
 
-    # Conectar ao banco de dados SQLite
-    conexao = sqlite3.connect(banco_de_dados)
-    cursor = conexao.cursor()
+        """Creates the databases and their tables"""
 
-    for tabela, arquivo in bancos_de_dados[banco_de_dados].items():
+        for database in self.databases:
 
-        workbook = openpyxl.load_workbook(arquivo)
-        sheet = workbook.active
-        nomes_colunas = [cell.value for cell in sheet[1]]
+            print("Creating database: ", database)
 
-        print("Criando tabela ", tabela)
-        print("Colunas: ", nomes_colunas)
+            conection = sqlite3.connect(database)
+            cursor = conection.cursor()
 
-        for i, nome_coluna in enumerate(nomes_colunas):
-            if nome_coluna == None:
-                nomes_colunas[i] = f"None_{i}"
-            elif nomes_colunas.count(nome_coluna) > 1:
-                nomes_colunas[i] = f"{nome_coluna}_{i}"
+            for table, path in database.items():
 
-        nomes_colunas = [cell.value for cell in sheet[1]]
+                workbook = openpyxl.load_workbook(path)
+                sheet = workbook.active
+                columns_names = [cell.value for cell in sheet[1]]
 
-        # Gerar uma string SQL para criar a tabela com base nos nomes das colunas
-        tabela_sql = f"CREATE TABLE IF NOT EXISTS {tabela} ({', '.join([f'col_{nome} TEXT' for nome in nomes_colunas])})"
+                print("Creating table ", table)
+                print("Columns: ", columns_names)
 
-        print("SQL para criar table: ", tabela_sql)
+                for i, column_name in enumerate(columns_names):
+                    if column_name == None:
+                        columns_names[i] = f"None_{i}"
+                    elif columns_names.count(column_name) > 1:
+                        columns_names[i] = f"{column_name}_{i}"
 
-        # Criar a tabela no banco de dados
-        cursor.execute(tabela_sql)
+                columns_names = [cell.value for cell in sheet[1]]
 
-        # Inserir os dados na tabela (ignorando a primeira linha)
-        for row in sheet.iter_rows(min_row=2, values_only=True):
-            cursor.execute(f"INSERT INTO {tabela} VALUES ({', '.join(['?'] * len(row))})", row)
+                #Create table:
+                table_sql = f"CREATE TABLE IF NOT EXISTS {table} ({', '.join([f'col_{nome} TEXT' for nome in columns_names])})"
+                cursor.execute(table_sql)
 
-    # Salvar as alterações e fechar a conexão
-    conexao.commit()
-    conexao.close()
+                #Insert data:
+                for row in sheet.iter_rows(min_row=2, values_only=True):
+                    cursor.execute(f"INSERT INTO {table} VALUES ({', '.join(['?'] * len(row))})", row)
+
+        conection.commit()
+        conection.close()
+
+sql_manager = SqlManager()
+
+if __name__ == "__main__":
+    sql_manager.create_databases()

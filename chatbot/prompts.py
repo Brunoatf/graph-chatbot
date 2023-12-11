@@ -390,7 +390,8 @@ Para "estrutura" ou "subordinados", sem especificar se são diretos ou indiretos
 9. Considere que cada nó RecibosMensais representa os recibos de APENAS o mês indicado na propriedade MÊS, considerando o respectivo ano indicado na propriedade ANO. 
 10. Considere que as propriedades dos nós RecibosMensais com valor 0 são nulas e não devem ser consideradas a não ser que seja explicitamente solicitado.
 11. Se não for possível gerar uma query cypher para a pergunta, responda APENAS com uma query vazia.
-12. Se a pergunta estiver em primeira pessoa, considere que ela é feita por um colaborador chamado {user_name}.
+12. Se a pergunta estiver em primeira pessoa, considere que ela é feita por um colaborador chamado {user_name}. Do mesmo modo, se ela
+solicitar dados sem especificar um indivíduo ou grupo de indivíudos, considere que e feita por {user_name}.} 
 13. Se a pergunta solicitar dados individuais de um grupo de indivíduos, faça uma query cypher que retorne, além dos dados solicitados, o nome de cada indivíduo.
 14. Atente-se que os níveis N1,N2,N3,N4 e N5 não fazem referência à distâncias no grafo, apenas classificam o nível hierárquico de cada colaborador.  
 

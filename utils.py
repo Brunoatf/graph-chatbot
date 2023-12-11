@@ -6,7 +6,10 @@ from docx import Document
 from docx.shared import Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-def extract_table(message: str):
+def extract_table(message: str) -> str:
+
+    '''Extracts a markdown table from a string.
+    Returns the table as a string or an empty string if no table is found.'''
 
     regex_pattern = r"(\|.*\|\n)+"
 
@@ -20,13 +23,18 @@ def extract_table(message: str):
 
     return markdown_table
 
-def convert_df_to_excel(df):
+def convert_df_to_excel(df: pd.DataFrame) -> bytes:
+
+    '''Converts a dataframe to an Excel file and returns the file as a byte string.'''
+
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False)
     return output.getvalue()
 
-def markdown_table_to_excel(md_table):
+def markdown_table_to_excel(md_table: str) -> bytes:
+
+    '''Converts a markdown table to an Excel file and returns the file as a byte string.'''
 
     lines = md_table.strip().split('\n')
 
@@ -39,7 +47,9 @@ def markdown_table_to_excel(md_table):
 
     return convert_df_to_excel(df)
 
-def chat_to_word(messages: dict, user_name: str):
+def chat_to_word(messages: dict, user_name: str) -> bytes:
+
+    '''Converts a chat to a Word document and returns the document as a byte string.'''
 
     document = Document()
 

@@ -34,9 +34,7 @@ class CustomLLM(LLM):
             )
         ]
         
-        print("Open AI called")
         response = self.encapsuled_model(messages, stop, run_manager, **kwargs)
-        print("Response received")
 
         return(response.content)
     

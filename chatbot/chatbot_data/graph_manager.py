@@ -5,13 +5,18 @@ class CompanyGraph():
 
     def __init__(self):
 
-        # Configuração de conexão com o banco de dados Neo4j
+        '''Configures the connection to the Neo4j database'''
+
         self.uri = "neo4j+s://82046d1f.databases.neo4j.io" 
         self.user = "neo4j"
         self.password = "LyvEFa1Eyf0VtMaELDfjqW6uyaF3pckSRDLY0z_koQU"
+        self.receipts_path = "chatbot/chatbot_data/data_files/recibos_estruturado.xlsx"
+        self.employees_path = "chatbot/chatbot_data/data_files/colaboradores.xlsx"
 
-    # Função para importar dados de um DataFrame para o Neo4j
-    def import_employee_dataframe_to_neo4j(self, tx, df):
+    def import_employee_dataframe_to_neo4j(self, tx, df: pd.DataFrame) -> None:
+
+        """Imports the employee dataframe to the Neo4J database"""
+
         query = """
         UNWIND $data AS row
         CREATE (p:Colaborador)
@@ -20,7 +25,10 @@ class CompanyGraph():
         data = df.to_dict(orient="records")
         tx.run(query, data=data)
 
-    def import_receipts_dataframe_to_neo4j(self, tx, df):
+    def import_receipts_dataframe_to_neo4j(self, tx, df: pd.DataFrame) -> None:
+
+        """Imports the receipts dataframe to the Neo4J database"""
+
         query = """
         UNWIND $data AS row
         CREATE (p:RecibosMensais)
@@ -29,15 +37,20 @@ class CompanyGraph():
         data = df.to_dict(orient="records")
         tx.run(query, data=data)
 
-    def set_receipts_relationships(self, tx):
+    def set_receipts_relationships(self, tx) -> None:
+
+        """Creates the relationships between the employees and their receipts"""
+
         query = """
         MATCH (p1:Colaborador), (p2:RecibosMensais)
         WHERE p1.`NOME` = p2.`NOME`
         CREATE (p1)-[:Recebeu]->(p2)"""
         tx.run(query)
     
-    #Função para incluir as relações de gestor: 
-    def set_employer_relationships(self, tx):
+    def set_employer_relationships(self, tx) -> None:
+
+        """Creates the relationships between the employees and their employers"""
+
         query = """
         MATCH (p1:Colaborador), (p2:Colaborador)
         WHERE p1.`NOME` = p2.GESTOR   
@@ -49,12 +62,8 @@ class CompanyGraph():
 
         """Creates the graph in the Neo4J database using the provided URI and auth"""
 
-        #Path for excel files:
-        employees = "chatbot/chatbot_data/colaboradores.xlsx"
-        receipts = "chatbot/chatbot_data/recibos_estruturado.xlsx"
-
-        df_employees = pd.read_excel(employees)
-        df_receipts = pd.read_excel(receipts)
+        df_employees = pd.read_excel(self.employees_path)
+        df_receipts = pd.read_excel(self.receipts_path)
 
         for column in df_employees.columns:
             if " " in column:
@@ -66,6 +75,7 @@ class CompanyGraph():
                 new_name = (column.replace(" ", "_")).replace("-", "_")
                 df_receipts.rename(columns={column: new_name}, inplace=True)
 
+        #For every employee, year and month, if there is no receipt, create a new receipt with 0s:
         for employee_name in df_employees["NOME"].unique():
             for year in df_receipts["ANO"].unique():
                 for month in df_receipts["MÊS"].unique():
@@ -76,27 +86,22 @@ class CompanyGraph():
                         new_line["MÊS"] = month
                         df_receipts = pd.concat([df_receipts, pd.DataFrame(new_line)], ignore_index=True)
             
-        # Crie uma instância do driver
         driver = GraphDatabase.driver(self.uri, auth=(self.user, self.password))
 
-        # Execute a importação para o Neo4j
         with driver.session() as session:
             session.execute_write(self.import_employee_dataframe_to_neo4j, df_employees)
             session.execute_write(self.import_receipts_dataframe_to_neo4j, df_receipts)
             session.execute_write(self.set_employer_relationships)
             session.execute_write(self.set_receipts_relationships)
 
-        # Feche a conexão com o driver
         driver.close()
 
-    def check_if_is_manager(self, name: str):
+    def check_if_is_manager(self, name: str) -> bool:
 
         """Checks if the provided name is a manager to someone in the graph"""
 
-        # Crie uma instância do driver
         driver = GraphDatabase.driver(self.uri, auth=(self.user, self.password))
 
-        # Execute a importação para o Neo4j
         with driver.session() as session:
             result = session.run("""MATCH (c:Colaborador {NOME: $name})-[:Gere*]->(subordinado)
                                     RETURN COUNT(DISTINCT subordinado) AS NumeroDeSubordinados""", name=name)
@@ -107,7 +112,6 @@ class CompanyGraph():
             else: 
                 subordinates = 0
         
-        # Feche a conexão com o driver
         driver.close()
 
         if subordinates > 0:
@@ -115,7 +119,7 @@ class CompanyGraph():
         else:
             return False
         
-    def user_exists(self, name:str):
+    def user_exists(self, name:str) -> bool:
 
         """Checks if user exists in the graph"""
 
@@ -127,7 +131,6 @@ class CompanyGraph():
             result = session.run("""MATCH (c:Colaborador {NOME: $name})
                                     RETURN COUNT(c) AS NumeroDeColaboradores""", name=name)
             user = result.single()
-
             if user is not None:
                 user = user[0]
             else: 
@@ -140,29 +143,24 @@ class CompanyGraph():
         else:
             return False
         
-    def get_personal_data(self, name: str):
+    def get_personal_data(self, name: str) -> dict:
 
         """Gets the personal data of the provided name"""
 
-        # Crie uma instância do driver
         driver = GraphDatabase.driver(self.uri, auth=(self.user, self.password))
 
-        # Execute a importação para o Neo4j
         with driver.session() as session:
             result = session.run("""MATCH (c:Colaborador {NOME: $name})
                                     RETURN properties(c) as properties""", name=name)
             personal_data = result.single()
-            print("Personal data", result)
             if personal_data is not None:
                 personal_data = personal_data[0]
             else: 
                 personal_data = None
         
-        # Feche a conexão com o driver
         driver.close()
 
         return personal_data
-
 
 employees_graph = CompanyGraph()
 

@@ -1,50 +1,26 @@
-# 🎈 Streamlit + LLM Examples App
+# Chabot RH - Protótipo
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/streamlit/llm-examples?quickstart=1)
+Este projeto consiste no protótipo de demonstração de um chatbot capaz de interagir com bases de dados representando a hierarquia e os recibos de uma empresa. Os dados utilizados para esta implementação são fictícios e seguem o modelo e conveções da empresa V.tal. 
 
-Starter examples for building LLM apps with Streamlit.
+## Implementação
 
-## Overview of the App
+Para a implementação, utiliza-se:
 
-This app showcases a growing collection of LLM minimum working examples.
+- Neo4j Aura: Serviço de banco de dados em grafo na nuvem.
+- Streamlit: Framework para construção de aplicações web em Python.
+- Python 3: Linguagem de programação utilizada para a implementação do chatbot.
+- LangChain: Biblioteca para implementação de agentes baseados em LLMs.
+- OpenAI API: API para geração de texto baseada em LLMs.
 
-Current examples include:
+## Execução
 
-- Chatbot
-- File Q&A
-- Chat with Internet search
-- LangChain Quickstart
-- LangChain PromptTemplate
-- Chat with user feedback
+Para executar o projeto, é necessário ter o Python 3 instalado. Em seguida, instale as dependências do projeto com o comando:
 
-## Demo App
+```pip install -r requirements.txt```
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://llm-examples.streamlit.app/)
+Após a instalação das dependências, execute a aplicação do Streamlit com o comando:
 
-### Get an OpenAI API key
+```python3 -m streamlit run Chatbot.py```
 
-You can get your own OpenAI API key by following the following instructions:
+Uma instância do navegador será aberta com a aplicação em localhost:8501.
 
-1. Go to https://platform.openai.com/account/api-keys.
-2. Click on the `+ Create new secret key` button.
-3. Next, enter an identifier name (optional) and click on the `Create secret key` button.
-
-### Enter the OpenAI API key in Streamlit Community Cloud
-
-To set the OpenAI API key as an environment variable in Streamlit apps, do the following:
-
-1. At the lower right corner, click on `< Manage app` then click on the vertical "..." followed by clicking on `Settings`.
-2. This brings the **App settings**, next click on the `Secrets` tab and paste the API key into the text box as follows:
-
-```sh
-OPENAI_API_KEY='xxxxxxxxxx'
-```
-
-## Run it locally
-
-```sh
-virtualenv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-streamlit run Chatbot.py
-```
