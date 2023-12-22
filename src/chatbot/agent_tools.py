@@ -104,7 +104,7 @@ class CustomGraphCypherQAChain(GraphCypherQAChain):
             try:
                 context = self.graph.query(generated_cypher)[: self.top_k]
             except ValueError as e:
-                print("Error: ", e.message)
+                print("Error: ", e)
                 new_query = self.cypher_correction_chain.run(
                     {"problematic_query": generated_cypher, "error_message": str(e)}
                 )
