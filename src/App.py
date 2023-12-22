@@ -6,7 +6,7 @@ from utils.data_conversion import extract_table, markdown_table_to_excel, chat_t
 from chatbot.chatbot_data.graph_manager import employees_graph
 
 #Set page title
-im = Image.open('../images/neuralmind.png')
+im = Image.open('images/neuralmind.png')
 st.set_page_config(page_title="Chatbot RH", page_icon = im)
 
 #Hide default Streamlit footer and menu
