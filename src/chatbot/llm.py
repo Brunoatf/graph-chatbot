@@ -9,12 +9,6 @@ import os
 class CustomLLM(LLM):
 
     model_name: str = "gpt-3.5-turbo-16k"
-    encapsuled_model: ChatOpenAI = ChatOpenAI(
-        model_name=model_name,
-        openai_api_key=os.getenv('openai_api_key'),
-        streaming=True,
-        max_tokens=2048,
-    )
 
     @property
     def _llm_type(self) -> str:
@@ -33,8 +27,17 @@ class CustomLLM(LLM):
                 content=prompt
             )
         ]
+
+        print("calling model", self.model_name)
+
+        encapsuled_model = ChatOpenAI(
+            model_name=self.model_name,
+            openai_api_key=os.getenv('OPENAI_API_KEY'),
+            streaming=True,
+            max_tokens=2048,
+        )
         
-        response = self.encapsuled_model(messages, stop, run_manager, **kwargs)
+        response = encapsuled_model(messages, stop, run_manager, **kwargs)
 
         return(response.content)
     

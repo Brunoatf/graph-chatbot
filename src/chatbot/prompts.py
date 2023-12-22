@@ -386,12 +386,12 @@ PERICULOSIDADE_FERIAS
 8. Considere rigorosamente as seguintes convenções na hora de gerar a query Cypher:
 Para "equipe"/"time"/"subordinados diretos" de um colaborador c1, use (c1:Colaborador)-[:Gere]->(c2:Colaborador)
 Para "subordinados indiretos" de um colaborador c1, use (c1:Colaborador)-[:Gere*2..]->(c2:Colaborador)
-Para "estrutura" ou "subordinados", sem especificar se são diretos ou indiretos, use (c1:Colaborador)-[:Gere*]->(c2:Colaborador)
+Para "estrutura", "área" ou "subordinados", sem especificar se são diretos ou indiretos, use (c1:Colaborador)-[:Gere*]->(c2:Colaborador)
 9. Considere que cada nó RecibosMensais representa os recibos de APENAS o mês indicado na propriedade MÊS, considerando o respectivo ano indicado na propriedade ANO. 
 10. Considere que as propriedades dos nós RecibosMensais com valor 0 são nulas e não devem ser consideradas a não ser que seja explicitamente solicitado.
 11. Se não for possível gerar uma query cypher para a pergunta, responda APENAS com uma query vazia.
 12. Se a pergunta estiver em primeira pessoa, considere que ela é feita por um colaborador chamado {user_name}. Do mesmo modo, se ela
-solicitar dados sem especificar um indivíduo ou grupo de indivíudos, considere que e feita por {user_name}.} 
+solicitar dados sem especificar um indivíduo ou grupo de indivíudos, considere que e feita por {user_name}. 
 13. Se a pergunta solicitar dados individuais de um grupo de indivíduos, faça uma query cypher que retorne, além dos dados solicitados, o nome de cada indivíduo.
 14. Atente-se que os níveis N1,N2,N3,N4 e N5 não fazem referência à distâncias no grafo, apenas classificam o nível hierárquico de cada colaborador.  
 
@@ -442,4 +442,171 @@ Exemplo 10: Quantos subordinados de {user_name} estão em cada N4?
 MATCH (c1:Colaborador {{NOME: '{user_name}'}})-[:Gere*]->(c2:Colaborador)
 RETURN c2.N4 AS N4, COUNT(c2) AS NumeroDeColaboradoresComMesmoN4
 
-{question}"""
+Exemplo 11: {question}"""
+
+cypher_correction_prompt_template = """Você deverá reescrever uma query Cypher com erro de sintaxe
+para um grafo que representa a estrutura hierárquica de uma empresa fictícia chamada MRKL.
+
+Considere as seguintes informações sobre o grafo:
+
+1. Sempre escreva nomes de colaboradores apenas em letras maiúsculas.
+2. No grafo de colaboradores da MRKL, todo nó possui a label Colaborador ou RecibosMensais e as seguintes propriedades - uma descrição ou exemplos estão indicados após os dois pontos (:):
+
+Para os nós com label Colaborador:
+
+NOME: Nome do colaborador, sempre em letras maiúsculas
+ID
+MATRÍCULA
+POSIÇÃO: 394796, 393346
+TIPO_POSIÇÃO: "Oficial", "Extra"
+ENDEREÇO: "JOAO LOURENCO", "BEM-TE-VI"
+BAIRRO: "VILA NOVA CONCEICAO", "MOEMA"
+CIDADE: "SAO PAULO", "SAO PAULO"
+UF: "SP", "PR"
+RG: "94.27.321-0", "63.222.321-7"
+ORGÃO_EMISSOR_DO_RG: "PF", "PF"
+ESTADO_EMISSOR_DO_RG: "DF", "SP"
+SEXO: "M", "F"
+RAÇA: "Branca", "Preta"
+ESTADO_CIVIL: "Casado", "Solteiro"
+DATA_DE_NASCIMENTO: 1949-07-06T00:00:00, 1949-11-30T00:00:00
+CPF: "194.009.123-00", "963.274.123-27"
+ESCOLARIDADE: "Educação Superior completa", "Pós-Graduação / Especialização"
+SALÁRIO_EM_REAIS: Salário atual do colaborador
+FAIXA_SALARIAL_FINAL_EM_REAIS: Faixa salarial final do cargo do colaborador
+FAIXA_SALARIAL_MEDIANA_EM_REAIS: Faixa salarial mediana do cargo do colaborador
+FAIXA_SALARIAL_INICIAL_EM_REAIS: Faixa salarial inicial do cargo do colaborador
+STATUS: "Afastamento", "Normal"
+CARGO: "PRESIDENTE E CEO", "VICE PRESIDENTE ATACADO E EVOLUCAO DO NEGOCIO"
+POSICOES_PCD: "SIM" se o colaborador é pessoa com deficiência, vazio caso contrário
+CODIGO_DO_CARGO: 997697, 997747
+DATA_DE_ADMISSÃO: 2022-01-06T00:00:00, 2020-04-06T00:00:00
+PROJETO_DE_TRABALHO: "GLOBENET", "2020 - REESTRUTURACAO VISAGIO"
+GESTOR: "-", "JOÃO FONSECA DA SILVA"
+CENTRO_DE_CUSTOS: "DIR PRESIDENCIA", "ATACADO E FRANQUIAS"
+CÓDIGO_CENTRO_DE_CUSTOS: "CMR00970000", "CMR04740000"
+FILIAL: "SP", "RJ"
+Status_orçamento: "ORCADO", "ORCADO"
+GRADE: 30, 25
+TIPO_CC: "OPEX", "CAPEX"
+LICENCIADOS: L +1 ANO ou vazio
+NIVEL_HIERARQUICO: Nível do cargo do colaborador na hierarquia da empresa
+GRUPO_HIERÁRQUICO: Área do colaborador na empresa
+CÓDIGO_GRUPO_HIERÁRQUICO
+
+As seguintes propriedades definem os conjuntos que o colaborador faz parte em diferentes níveis da hierarquia da empresa. Sempre que a pergunta mencionar N1, N2, N3, N4, N5, vice-presidências (VPs), diretorias, gerências, coordenações ou subcoordenações, utilize apenas os valores dessas propriedades: 
+
+N1: Indica a área da empresa e nível da Vice-Presidência que o colaborador faz parte
+N2: Indica o nível da diretoria que o colaborador faz parte. Todos os colabordores com determinado N2 estão em um mesmo N1.
+N3: Indica o nível da gerência que o colaborador faz parte. Todos os colabordores com determinado N3 estão em um mesmo N2.
+N4: Indica o nível da coordenação que o colaborador faz parte. Todos os colabordores com determinado N4 estão em um mesmo N3.
+N5: Indica o nível da subcoordenação que o colaborador faz parte. Todos os colaboradores com determinado N5 estão em um mesmo N4.
+
+Para os nós com label RecibosMensais (considere que os valores de todas as propriedades, com exceção de MÊS e ANO, estão em reais):
+
+MÊS: Mês do recibo
+ANO: Ano do recibo
+TOTAL_PROVENTOS: Total de proventos recebidos além do salário no mês
+TOTAL_DESCONTOS: Total a serem descontado dos proventos no mês
+LIQUIDO_A_RECEBER: Total líquido a ser recebido no mês
+SALARIO: Valor de salário recebido no mês
+ADIANTAMENTO_13_SALARIO_PAGO_FERIAS
+DESCONTO_FALTAS
+TICKET_ALIMENTACAO
+PARCELAM_COPART_SULAMER_SAUDE
+DSR_SEM_SOBREAVISO
+EMPRESTIMO_FUNDACAO
+ASSIST_FUNERAL_EXTENSIVA
+GRATIF_EXTRAORDINARIA
+COPARTICIP_SULAMERICA_SAUDE
+FERIAS
+BOLSA_AUXILIO_ESTAGIO
+CLUBE_MENSALIDADE
+SALARIO_MATERNIDADE
+DESC_EMPREST_FERIAS
+SALARIO_FAMILIA
+AUXILIO_CRECHE
+DESCONTO_ADIANTAMENTO_FERIAS_MES
+ADIC_SOBREAVISO
+PENSAO_ALIMENTICIA_FERIAS_MES
+DEVOLUÇÃO_SEGURO_DE_VIDA
+FBRTPREV_EMPRESTIMO
+AJUDA_DE_CUSTO
+PENSAO_ALIMENTICIA_MES_II
+INSUFICIENCIA_SALDO_MES_ANTERIOR
+DEV_ADIANTAMENTO_BENEFICIOS
+ASSIST_ODONTOLOGICA_SUL_AMERICA
+FBRTPREV_MENSALIDADE_ALTERNATIVO
+FUNDACAO_14_TCS_PREV_BASICA_MES
+VALE_REFEICAO
+AUXILIO_BENEFICIO_ESPECIAL
+SEGURO_DE_VIDA_COMPLEM_I
+VALE_TRANSP_PARTICIPACAO
+DSR_ADICIONAL_NOTURNO
+MEDIA_ABONO_PECUNIARIO
+ABONO_PECUNIARIO
+PARCELAM_COPART_CNU_SAUDE
+MENSALIDADE_SINDICATO
+FARMACIA_CONVENIO
+SEGUNDA_VIA_CARTAO_VALE_TRANSPORTE
+FARMACIA_CONVENIO_INTEGRAL
+DSR_HORAS_EXTRAS
+PENSAO_ALIMENTICIA_FERIAS_MES_II
+PENSAO_ALIMENTICIA_MES_I
+ASTEL_ASSOCIACAO_TELESC
+ADICIONAL_NOTURNO
+LICENCA_REMUN_PRORROG_MATERNIDADE
+PARTICIP_VALE_TRANSPORTE
+TELEMARPREV_CONTRIBUICAO
+ADIANTAMENTO_BENEFICIOS
+LICENCA_REMUN_PRORROG_PATERNIDADE
+MEDIA_FERIAS
+HORAS_EXTRAS
+ADICIONAL_PERICULOSIDADE_HS_EXTRAS
+FUNDACAO_14_TCS_PREV_VOL_MES
+INSUFICIENCIA_SALDO_MES
+COPARTICIPACAO_CNU_SAUDE
+PARTICIP_TICKET_ALIMENTACAO
+INFRACOES_DE_TRANSITO
+DESC_PREVIDENCIA_PRIVADA_VGBL_1
+ART_MG_MENSALIDADE
+EMPRESTIMO_FERIAS
+INSS_DESCONTADO_FERIAS_I
+DESC_PREVIDENCIA_PRIVADA_PGBL_1
+IRRF_DESCONTADO_FERIAS
+BRTPREV_CONT_BASICA_ATIVO
+IRRF_MES
+PERICULOSIDADE_ABONO_PECUN
+PLANO_PBS_CONTRIBUICAO
+BANCO_HORAS_EXTRAS_50%
+SEGURO_DE_VIDA_COMPLEM_II
+TCSPREV_EMPRESTIMO
+INSS_MES
+ADICIONAL_PERICULOSIDADE
+AUXILIO_DOENCA
+PERICULOSIDADE_FERIAS
+
+3. Os únicos relacionamento do grafo são:
+
+(c1:Colaborador)-[:Gere]->(c2:Colaborador), indicando que c1 é o gestor/chefe de c2, que é seu subordinado direto. Ou seja, c1 gere o c2. Esse relacionamento deve ser usado para responder perguntas relacionadas à hierarquia da empresa.
+
+(c1:Colaborador)-[:Recebeu]->(r:RecibosMensais), indicando que c1 recebeu r para determinado mês. Esse relacionamento deve ser usado para responder perguntas relacionadas aos recibos de determinado período.
+
+4. Considere rigorosamente as seguintes convenções na hora de gerar a query Cypher:
+Para "equipe"/"time"/"subordinados diretos" de um colaborador c1, use (c1:Colaborador)-[:Gere]->(c2:Colaborador)
+Para "subordinados indiretos" de um colaborador c1, use (c1:Colaborador)-[:Gere*2..]->(c2:Colaborador)
+Para "estrutura", "área" ou "subordinados", sem especificar se são diretos ou indiretos, use (c1:Colaborador)-[:Gere*]->(c2:Colaborador)
+5. Considere que cada nó RecibosMensais representa os recibos de APENAS o mês indicado na propriedade MÊS, considerando o respectivo ano indicado na propriedade ANO. 
+6. Considere que as propriedades dos nós RecibosMensais com valor 0 são nulas e não devem ser consideradas a não ser que seja explicitamente solicitado.
+7. Se não for possível gerar uma query cypher para a pergunta, responda APENAS com uma query vazia.
+8. Se a pergunta estiver em primeira pessoa, considere que ela é feita por um colaborador chamado {user_name}. Do mesmo modo, se ela
+solicitar dados sem especificar um indivíduo ou grupo de indivíudos, considere que e feita por {user_name}. 
+9. Se a pergunta solicitar dados individuais de um grupo de indivíduos, faça uma query cypher que retorne, além dos dados solicitados, o nome de cada indivíduo.
+10. Atente-se que os níveis N1,N2,N3,N4 e N5 não fazem referência à distâncias no grafo, apenas classificam o nível hierárquico de cada colaborador.  
+
+Considere a mensagem de erro fornecida e, com base nela, responda APENAS com a query corrigida.
+
+Query com erro de sintaxe: {problematic_query}
+Mensagem de erro: {error_message}
+
+Query corrigida: """

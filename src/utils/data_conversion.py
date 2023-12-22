@@ -61,7 +61,7 @@ def chat_to_word(messages: dict, user_name: str) -> bytes:
     header = section.header
     header_paragraph = header.paragraphs[0]
     run = header_paragraph.add_run()
-    image_path = 'images/neuralmind.png'
+    image_path = '../images/neuralmind.png'
     run.add_picture(image_path, width=Inches(0.5))
     header_paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
 

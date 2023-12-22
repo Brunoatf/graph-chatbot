@@ -18,9 +18,14 @@ Para executar o projeto, é necessário ter o Python 3 instalado. Em seguida, in
 
 ```pip install -r requirements.txt```
 
-Após a instalação das dependências, execute a aplicação do Streamlit com o comando:
+Após a instalação das dependências, acesse a pasta do código fonte com:
 
-```python3 -m streamlit run Chatbot.py```
+```cd src```
+
+Em seguida, execute a aplicação do Streamlit com o comando abaixo:
+
+```python3 -m streamlit run App.py```
 
 Uma instância do navegador será aberta com a aplicação em localhost:8501.
 
+Para o funcionamento do Chatbot, é necessário que haja uma variável de ambiente chamada **OPENAI_API_KEY** com a chave de acesso à API da OpenAI.
